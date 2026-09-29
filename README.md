@@ -44,7 +44,7 @@ Next.js 16 (App Router, server actions, proxy), React 19, Tailwind CSS 4, Drizzl
 Vercel has no persistent disk, so use a hosted libSQL database (Turso, free tier):
 
 1. `turso db create apollonia` and `turso db tokens create apollonia`
-2. Set `DATABASE_URL=libsql://...` and `DATABASE_AUTH_TOKEN=...`, plus `AUTH_SECRET`, `ADMIN_PASSWORD`, `NEXT_PUBLIC_SITE_URL`, and optionally `RESEND_API_KEY`, `EMAIL_FROM`, `HOTEL_NOTIFY_EMAIL`.
+2. In `vercel.json` the functions run in `dub1` (Dublin), next to the database in `aws-eu-west-1`. Set `DATABASE_URL=libsql://...` and `DATABASE_AUTH_TOKEN=...`, plus `AUTH_SECRET`, `ADMIN_PASSWORD`, `NEXT_PUBLIC_SITE_URL`, and optionally `RESEND_API_KEY`, `EMAIL_FROM`, `HOTEL_NOTIFY_EMAIL`.
 3. `npm run db:push && npm run db:seed` against that database, then deploy.
 
 On a VPS, the default `file:` SQLite database works as is.
