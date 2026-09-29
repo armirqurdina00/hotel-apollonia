@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
       title: t.meta.title,
       description: t.meta.description,
       locale: lang,
-      images: [{ url: "/photos/exterior.jpg", width: 1069, height: 836 }],
+      images: [{ url: "/photos/entrance.jpg", width: 2000, height: 1500 }],
     },
   };
 }
@@ -48,7 +48,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
     url: `${siteUrl()}/${lang}`,
     telephone: HOTEL.phone,
     email: HOTEL.email,
-    image: `${siteUrl()}/photos/exterior.jpg`,
+    image: `${siteUrl()}/photos/entrance.jpg`,
     priceRange: "€€",
     checkinTime: HOTEL.checkInFrom,
     checkoutTime: HOTEL.checkOutUntil,
