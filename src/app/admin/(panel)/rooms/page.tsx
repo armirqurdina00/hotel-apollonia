@@ -26,7 +26,7 @@ export default async function RoomsAdmin() {
       <ul className="mt-8 space-y-3">
         {rooms.map((r) => (
           <li key={r.id} className="rounded-[var(--radius-soft)] border border-line bg-mist p-4">
-            <form action={updateRoomType} className="grid items-end gap-4 sm:grid-cols-[4rem_1fr_8rem_7rem_auto_auto]">
+            <form action={updateRoomType} className="grid items-end gap-4 sm:grid-cols-[4rem_1fr_8rem_7rem_auto_auto_auto]">
               <input type="hidden" name="id" value={r.id} />
               <div className="relative hidden sm:block size-16 overflow-hidden rounded-[4px]">
                 <Image src={r.images[0]} alt="" fill sizes="64px" className="object-cover" />
@@ -53,13 +53,14 @@ export default async function RoomsAdmin() {
                 <input type="checkbox" name="active" defaultChecked={r.active} className="size-4" /> On sale
               </label>
               <button className="btn btn-ghost">Save</button>
+              <Link href={`/admin/rooms/${r.id}`} className="btn btn-primary">
+                Edit details
+              </Link>
             </form>
           </li>
         ))}
       </ul>
-      <p className="mt-6 text-sm text-muted">
-        Room names, descriptions and photos are in <code>scripts/seed.ts</code> for now. Run <code>npm run db:studio</code> to edit them directly.
-      </p>
+      <p className="mt-6 text-sm text-muted">Use Edit details to change names and descriptions in each language, photos, size, guests and what&apos;s in the room.</p>
     </div>
   );
 }

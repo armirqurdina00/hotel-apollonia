@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { z } from "zod";
-import { db, bookings, dayOverrides, inquiries, roomTypes, BOOKING_STATUSES } from "@/db";
+import { db, bookings, dayOverrides, inquiries, media, roomTypes, BOOKING_STATUSES } from "@/db";
 import { ADMIN_COOKIE, adminCookieOptions, checkAdminPassword, createAdminSession } from "@/lib/auth";
 import { requireAdmin } from "@/lib/admin";
 import { createBooking, SoldOutError, validateStay } from "@/lib/engine";
@@ -158,6 +158,114 @@ export async function updateRoomType(form: FormData) {
     .set({ basePriceCents: price, inventory, active: form.get("active") === "on" })
     .where(eq(roomTypes.id, id));
   revalidatePath("/admin/rooms");
+}
+
+const localized = (required: boolean) =>
+  z.object({
+    sq: required ? z.string().trim().min(1) : z.string().trim(),
+    en: required ? z.string().trim().min(1) : z.string().trim(),
+    de: required ? z.string().trim().min(1) : z.string().trim(),
+  });
+
+const roomDetails = z.object({
+  name: localized(true),
+  summary: localized(false),
+  description: localized(false),
+  bed: localized(false),
+  sizeM2: z.coerce.number().int().min(1).max(500),
+  maxAdults: z.coerce.number().int().min(1).max(20),
+  maxChildren: z.coerce.number().int().min(0).max(20),
+  basePriceCents: z.number().int().positive(),
+  inventory: z.coerce.number().int().min(0).max(500),
+  images: z.array(z.string().regex(/^\/(photos\/[\w.-]+|media\/\d+)$/)).min(1),
+  amenities: z.array(z.string().regex(/^[a-z_]+$/)),
+  active: z.boolean(),
+});
+
+export async function saveRoomDetails(_: AdminState, form: FormData): Promise<AdminState> {
+  await requireAdmin();
+  const id = Number(form.get("id"));
+  const text = (field: string) => ({
+    sq: String(form.get(`${field}.sq`) ?? ""),
+    en: String(form.get(`${field}.en`) ?? ""),
+    de: String(form.get(`${field}.de`) ?? ""),
+  });
+  const parsed = roomDetails.safeParse({
+    name: text("name"),
+    summary: text("summary"),
+    description: text("description"),
+    bed: text("bed"),
+    sizeM2: form.get("sizeM2"),
+    maxAdults: form.get("maxAdults"),
+    maxChildren: form.get("maxChildren"),
+    basePriceCents: Math.round(Number(String(form.get("basePrice")).replace(",", ".")) * 100),
+    inventory: form.get("inventory"),
+    images: form.getAll("images").map(String),
+    amenities: form.getAll("amenities").map(String),
+    active: form.get("active") === "on",
+  });
+  if (!parsed.success) {
+    const field = String(parsed.error.issues[0]?.path[0] ?? "");
+    const messages: Record<string, string> = {
+      name: "Give the room a name in all three languages.",
+      images: "Choose at least one photo.",
+      basePriceCents: "Enter a base price above zero.",
+      sizeM2: "Enter the room size in m².",
+      maxAdults: "Allow at least one adult.",
+    };
+    return { error: messages[field] ?? "Some fields aren't valid. Check the numbers and try again." };
+  }
+  const updated = await db.update(roomTypes).set(parsed.data).where(eq(roomTypes.id, id)).returning({ id: roomTypes.id });
+  if (updated.length === 0) return { error: "This room type no longer exists." };
+  revalidatePath("/admin/rooms");
+  revalidatePath(`/admin/rooms/${id}`);
+  return { ok: "Saved. The website shows the changes now." };
+}
+
+const MAX_UPLOAD = 3.5 * 1024 * 1024;
+
+/** Checks the file's first bytes, so only real JPEG/WebP images are stored. */
+function sniffImage(bytes: Uint8Array) {
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  const tag = (from: number) => String.fromCharCode(...bytes.slice(from, from + 4));
+  if (tag(0) === "RIFF" && tag(8) === "WEBP") return "image/webp";
+  return null;
+}
+
+export type UploadResult = { src?: string; error?: string };
+
+export async function uploadRoomPhoto(form: FormData): Promise<UploadResult> {
+  await requireAdmin();
+  const file = form.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose a photo to upload." };
+  if (file.size > MAX_UPLOAD) return { error: "That photo is too large. Try a smaller one." };
+  const data = Buffer.from(await file.arrayBuffer());
+  const contentType = sniffImage(data);
+  if (!contentType) return { error: "That file isn't a photo we can use. Upload a JPEG, PNG, WebP or HEIC photo." };
+  const size = (key: string) => Math.min(10000, Math.max(1, Number(form.get(key)) | 0));
+  const [row] = await db
+    .insert(media)
+    .values({
+      contentType,
+      data,
+      width: size("width"),
+      height: size("height"),
+      filename: String(form.get("filename") ?? file.name).slice(0, 200),
+    })
+    .returning({ id: media.id });
+  return { src: `/media/${row.id}` };
+}
+
+/** Deletes an uploaded photo, unless a room still uses it. */
+export async function deleteUploadedPhoto(src: string): Promise<UploadResult> {
+  await requireAdmin();
+  const id = Number(/^\/media\/(\d+)$/.exec(src)?.[1]);
+  if (!id) return { error: "Only uploaded photos can be deleted here." };
+  const rooms = await db.select({ name: roomTypes.name, images: roomTypes.images }).from(roomTypes);
+  const using = rooms.filter((r) => r.images.includes(src)).map((r) => r.name.en);
+  if (using.length) return { error: `Still used by ${using.join(", ")}. Remove it there first.` };
+  await db.delete(media).where(eq(media.id, id));
+  return {};
 }
 
 export async function setInquiryStatus(form: FormData) {

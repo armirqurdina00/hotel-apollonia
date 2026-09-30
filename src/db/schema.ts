@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+import { blob, integer, sqliteTable, text, uniqueIndex, index } from "drizzle-orm/sqlite-core";
 
 /** Text in every site language. */
 export type Localized = { sq: string; en: string; de: string };
@@ -22,6 +22,22 @@ export const roomTypes = sqliteTable("room_types", {
   amenities: text("amenities", { mode: "json" }).$type<string[]>().notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
+});
+
+/**
+ * Photos uploaded from the admin panel, served at /media/{id}. Kept in the
+ * database because Vercel has no disk; the browser shrinks them before upload.
+ */
+export const media = sqliteTable("media", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  contentType: text("content_type").notNull(),
+  data: blob("data", { mode: "buffer" }).notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  filename: text("filename").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 /** Per-date adjustments set from the admin calendar. */
