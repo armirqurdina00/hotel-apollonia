@@ -32,19 +32,19 @@ type Props = {
 function Counter({ label, name, value, min, max, onChange }: { label: string; name: string; value: number; min: number; max: number; onChange: (n: number) => void }) {
   const id = useId();
   return (
-    <div>
+    <div className="stepper-wrap">
       <label htmlFor={id} className="field-label">
         {label}
       </label>
-      <div className="flex items-stretch">
+      <div className="stepper">
         <button
           type="button"
           aria-label={`${label} −1`}
-          className="field !w-11 !px-0 !rounded-r-none text-xl leading-none disabled:text-black/25"
+          className="stepper-btn"
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
         >
-          −
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9" /></svg>
         </button>
         <input
           id={id}
@@ -55,16 +55,16 @@ function Counter({ label, name, value, min, max, onChange }: { label: string; na
           max={max}
           value={value}
           onChange={(e) => onChange(Math.min(max, Math.max(min, Number(e.target.value) || min)))}
-          className="field !rounded-none !border-x-0 text-center tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+          className="stepper-input"
         />
         <button
           type="button"
           aria-label={`${label} +1`}
-          className="field !w-11 !px-0 !rounded-l-none text-xl leading-none disabled:text-black/25"
+          className="stepper-btn"
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
         >
-          +
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9M8 3.5v9" /></svg>
         </button>
       </div>
     </div>
