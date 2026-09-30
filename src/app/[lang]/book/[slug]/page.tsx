@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Price } from "@/components/price";
 import { notFound } from "next/navigation";
 import { getDictionary, isLocale, plural, fill } from "@/i18n";
 import { quoteRoom, roomBySlug, validateStay } from "@/lib/engine";
@@ -121,8 +122,10 @@ export default async function CheckoutPage({ params, searchParams }: PageProps<"
                 </div>
               )}
               <div className="flex justify-between items-baseline pt-2">
-                <dt className="font-semibold">{t.checkout.total}</dt>
-                <dd className="font-display text-3xl">{formatMoney(quote.totalCents, lang)}</dd>
+                <dt className="font-display">{t.checkout.total}</dt>
+                <dd>
+                  <Price cents={quote.totalCents} lang={lang} className="text-2xl text-gold" />
+                </dd>
               </div>
               <p className="text-sm text-white/65 text-right">{t.checkout.included}</p>
             </dl>

@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { RoomType } from "@/db";
 import { plural, fill, type Dictionary, type Locale } from "@/i18n";
-import { formatMoney } from "@/lib/dates";
+import { Price, withPrice } from "./price";
 
 export function RoomRow({ room, lang, t, fromCents, priority }: { room: RoomType; lang: Locale; t: Dictionary; fromCents: number; priority?: boolean }) {
   const href = `/${lang}/rooms/${room.slug}`;
@@ -20,17 +20,14 @@ export function RoomRow({ room, lang, t, fromCents, priority }: { room: RoomType
         />
       </Link>
       <div className="flex flex-col">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h3 className="text-3xl">
-            <Link href={href} className="hover:text-emerald">
-              {room.name[lang]}
-            </Link>
-          </h3>
-          <p className="text-right">
-            <span className="font-display text-2xl tabular-nums">{fill(t.rooms.from, { price: formatMoney(fromCents, lang) })}</span>{" "}
-            <span className="text-sm text-muted">{t.rooms.perNight}</span>
-          </p>
-        </div>
+        <h3 className="text-3xl">
+          <Link href={href} className="hover:text-emerald">
+            {room.name[lang]}
+          </Link>
+        </h3>
+        <p className="mt-2 font-display text-muted">
+          {withPrice(t.rooms.from, <Price cents={fromCents} lang={lang} className="text-xl text-emerald" />)} {t.rooms.perNight}
+        </p>
         <p className="mt-3 text-muted prose-measure">{room.summary[lang]}</p>
         <dl className="mt-5 grid grid-cols-3 gap-4 max-w-md text-sm">
           <div>

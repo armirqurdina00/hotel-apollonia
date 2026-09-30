@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { addDays, addMonths, daysInMonth, formatMoney, monthStart, weekday, nightsBetween, formatDate, formatMonthYear, weekdayInitials } from "@/lib/dates";
 import { plural, type Locale, type Plural } from "@/i18n/config";
+import { Price, withPrice } from "./price";
 
 type Day = { d: string; p: number; a: number; c: boolean };
 
@@ -20,6 +21,7 @@ export type CalendarLabels = {
   nights: Plural;
   total: string;
   discount: string;
+  perNight: string;
 };
 
 type Props = {
@@ -154,16 +156,22 @@ export function RateCalendar({ lang, slug, today, labels, lengthOfStay, adults, 
                       onMouseEnter={() => setHover(d)}
                       onFocus={() => setHover(d)}
                       className={[
-                        "relative flex flex-col items-center justify-center rounded-[4px] h-14 sm:h-16 text-sm transition-colors",
+                        "relative flex flex-col items-center justify-center gap-1 rounded-[4px] h-14 sm:h-[4.25rem] transition-colors",
                         isIn || isOut ? "bg-gold text-ink" : inRange(d) ? "bg-gold/30" : selectable ? "bg-white/[0.07] hover:bg-white/15" : "",
                         past ? "text-white/25" : full && !(checkIn && canCheckOutOn(d)) ? "text-white/40" : "",
                       ].join(" ")}
                     >
-                      <span className="tabular-nums font-semibold leading-none">{i + 1}</span>
+                      <span className={`text-[0.8125rem] leading-none tabular-nums ${past ? "" : "font-medium"} ${isIn || isOut ? "" : "opacity-75"}`}>{i + 1}</span>
                       {!past && day && (
-                        <span className={`mt-1 text-[0.6875rem] leading-none tabular-nums ${isIn || isOut ? "" : "opacity-80"}`}>
-                          {full ? (checkIn && canCheckOutOn(d) ? "" : labels.soldOut) : formatMoney(day.p, lang)}
-                        </span>
+                        full ? (
+                          <span className="text-[0.6875rem] leading-none">{checkIn && canCheckOutOn(d) ? "" : labels.soldOut}</span>
+                        ) : (
+                          <Price
+                            cents={day.p}
+                            lang={lang}
+                            className={`text-[0.8125rem] sm:text-[0.9375rem] ${isIn || isOut ? "text-ink" : "text-white"}`}
+                          />
+                        )
                       )}
                       {few && !full && !isIn && !isOut && <span aria-hidden className="absolute top-1 right-1 size-1.5 rounded-full bg-gold" />}
                     </button>
@@ -179,13 +187,25 @@ export function RateCalendar({ lang, slug, today, labels, lengthOfStay, adults, 
         {quote ? (
           <>
             <div>
-              <p className="font-display text-3xl tabular-nums">{formatMoney(quote.total, lang)}</p>
-              <p className="text-sm text-white/75">
-                {labels.total.replace("{nights}", plural(lang, labels.nights, quote.nights))}
-                {quote.rate > 0 && `, ${labels.discount.replace("{pct}", String(Math.round(quote.rate * 100)))}`}
+              <p className="flex flex-wrap items-baseline gap-x-2.5">
+                <Price cents={quote.total} lang={lang} className="text-2xl text-gold" />
+                {quote.rate > 0 && (
+                  <s className="text-white/55">
+                    <Price cents={quote.subtotal} lang={lang} className="!font-normal" />
+                  </s>
+                )}
+                {quote.rate > 0 && (
+                  <span title={labels.discount.replace("{pct}", String(Math.round(quote.rate * 100)))} className="rounded-full bg-gold/20 px-2 py-0.5 text-xs font-semibold text-gold">
+                    −{Math.round(quote.rate * 100)}%
+                  </span>
+                )}
+              </p>
+              <p className="mt-1 font-display text-sm text-white/70">
+                {labels.total.replace("{nights}", plural(lang, labels.nights, quote.nights))} ·{" "}
+                {withPrice(labels.perNight, <Price cents={Math.round(quote.total / quote.nights / 100) * 100} lang={lang} />)}
               </p>
             </div>
-            <div className="ml-auto flex gap-3">
+            <div className="flex w-full flex-col-reverse gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:gap-3">
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -202,8 +222,8 @@ export function RateCalendar({ lang, slug, today, labels, lengthOfStay, adults, 
             </div>
           </>
         ) : (
-          <p className="text-sm text-white/70">
-            <span aria-hidden className="inline-block size-1.5 rounded-full bg-gold mr-2 align-middle" />
+          <p className="flex items-center gap-2 text-sm text-white/75">
+            <span aria-hidden className="inline-block size-1.5 rounded-full bg-gold" />
             {labels.fewLeft.other.replace("{n}", "1–2")}
           </p>
         )}

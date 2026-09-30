@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Price, withPrice } from "@/components/price";
 import { notFound } from "next/navigation";
 import { getDictionary, isLocale, plural, fill, type Dictionary, type Locale } from "@/i18n";
 import { searchStays, validateStay, type Quote, type StayQuery } from "@/lib/engine";
 import { HOTEL } from "@/lib/hotel";
-import { formatMoney, todayInGjakova, addDays } from "@/lib/dates";
+import { todayInGjakova, addDays } from "@/lib/dates";
 import { SearchPanel } from "@/components/search-panel";
 import { searchLabels } from "@/components/search-labels";
 import { describeDates, describeGuests } from "@/components/stay-summary";
@@ -94,7 +95,7 @@ function ResultRow({ quote, stay, lang, t }: { quote: Quote; stay: StayQuery; la
     rooms: String(stay.rooms),
   });
   return (
-    <li className={`grid gap-5 sm:grid-cols-[14rem_1fr] lg:grid-cols-[16rem_1fr_16rem] py-7 border-t border-line first:border-t-0 ${quote.bookable ? "" : "opacity-60"}`}>
+    <li className={`grid gap-5 sm:grid-cols-[14rem_1fr] lg:grid-cols-[16rem_1fr_auto] lg:gap-8 py-7 border-t border-line first:border-t-0 ${quote.bookable ? "" : "opacity-60"}`}>
       <div className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-soft)]">
         <Image src={room.images[0]} alt="" fill sizes="16rem" className="object-cover" />
       </div>
@@ -104,28 +105,52 @@ function ResultRow({ quote, stay, lang, t }: { quote: Quote; stay: StayQuery; la
             {room.name[lang]}
           </Link>
         </h2>
-        <p className="mt-2 text-muted">{room.summary[lang]}</p>
-        <p className="mt-3 text-sm">
+        {quote.bookable ? (
+          <div className="mt-2">
+            <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+              <Price cents={quote.totalCents} lang={lang} className="text-2xl text-emerald" />
+              {quote.discountCents > 0 && (
+                <>
+                  <s className="text-muted">
+                    <Price cents={quote.subtotalCents} lang={lang} className="!font-normal" />
+                  </s>
+                  <span title={fill(t.results.discount, { pct: Math.round(quote.discountRate * 100) })} className="rounded-full bg-gold-soft px-2 py-0.5 text-xs font-semibold text-forest">−{Math.round(quote.discountRate * 100)}%</span>
+                </>
+              )}
+            </p>
+            <p className="mt-1 font-display text-sm text-muted">
+              {fill(t.results.total, { nights: plural(lang, t.search.nights, quote.nights.length) })} ·{" "}
+              {withPrice(t.results.perNight, <Price cents={Math.round(quote.totalCents / quote.nights.length / 100) * 100} lang={lang} />)}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-2 text-[0.9375rem] font-semibold">{quote.fitsParty ? t.results.unavailable : t.results.doesNotFit}</p>
+        )}
+        <p className="mt-3 text-muted">{room.summary[lang]}</p>
+        <p className="mt-2 text-sm">
           {fill(t.rooms.size, { n: room.sizeM2 })}, {room.bed[lang]}, {plural(lang, t.rooms.upTo, room.maxAdults + room.maxChildren)}
         </p>
+        {quote.bookable && (
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-forest">
+            {[t.amenities.breakfast, t.results.freeCancel].map((perk) => (
+              <li key={perk} className="flex items-center gap-1.5">
+                <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4 shrink-0 fill-none stroke-emerald [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:2]">
+                  <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+                </svg>
+                {perk}
+              </li>
+            ))}
+          </ul>
+        )}
         {quote.bookable && quote.minAvailable <= 3 && <p className="mt-3 text-sm font-semibold text-forest">{plural(lang, t.results.left, quote.minAvailable)}</p>}
       </div>
-      <div className="sm:col-start-2 lg:col-start-3 lg:text-right flex flex-col lg:items-end">
-        {quote.bookable ? (
-          <>
-            <p className="font-display text-3xl tabular-nums">{formatMoney(quote.totalCents, lang)}</p>
-            <p className="text-sm text-muted">{fill(t.results.total, { nights: plural(lang, t.search.nights, quote.nights.length) })}</p>
-            {quote.discountRate > 0 && (
-              <p className="text-sm text-ok font-semibold">{fill(t.results.discount, { pct: Math.round(quote.discountRate * 100) })}</p>
-            )}
-            <Link href={`/${lang}/book/${room.slug}?${qs}`} className="btn btn-primary mt-4 w-full lg:w-auto">
-              {t.results.select}
-            </Link>
-          </>
-        ) : (
-          <p className="text-[0.9375rem] font-semibold">{quote.fitsParty ? t.results.unavailable : t.results.doesNotFit}</p>
-        )}
-      </div>
+      {quote.bookable && (
+        <div className="sm:col-start-2 lg:col-start-3 lg:self-end">
+          <Link href={`/${lang}/book/${room.slug}?${qs}`} className="btn btn-primary w-full lg:w-auto">
+            {t.results.select}
+          </Link>
+        </div>
+      )}
     </li>
   );
 }

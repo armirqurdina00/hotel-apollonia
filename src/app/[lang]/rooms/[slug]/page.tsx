@@ -110,6 +110,7 @@ export default async function RoomPage({ params }: PageProps<"/[lang]/rooms/[slu
             nights: t.search.nights,
             total: t.results.total,
             discount: t.results.discount,
+            perNight: t.results.perNight,
           }}
         />
       </section>

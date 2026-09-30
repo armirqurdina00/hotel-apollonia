@@ -7,7 +7,8 @@ import { getDictionary, isLocale, fill } from "@/i18n";
 import { verifyBookingToken } from "@/lib/auth";
 import { cancellationOpen } from "@/lib/engine";
 import { HOTEL } from "@/lib/hotel";
-import { formatDate, formatMoney } from "@/lib/dates";
+import { formatDate } from "@/lib/dates";
+import { Price } from "@/components/price";
 import { describeGuests } from "@/components/stay-summary";
 import { CancelBooking } from "@/components/booking-client";
 
@@ -91,7 +92,9 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
               </div>
               <div>
                 <dt className="text-sm text-muted">{t.confirm.total}</dt>
-                <dd className="font-display text-2xl">{formatMoney(b.totalCents, lang)}</dd>
+                <dd className="mt-0.5">
+                  <Price cents={b.totalCents} lang={lang} className="text-xl text-emerald" />
+                </dd>
                 <dd className="text-sm text-muted">{t.checkout.included}</dd>
               </div>
             </dl>

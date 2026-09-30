@@ -450,3 +450,12 @@
     transform: scale(0.985);
   }
 }
+
+/* Prices: the body font's lining figures ("0", not the display face's "O"). */
+.price {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
