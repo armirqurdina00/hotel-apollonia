@@ -27,12 +27,12 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         <div className="wrap grid lg:grid-cols-12 lg:min-h-[min(46rem,calc(100dvh-4.5rem))] pt-0 lg:pt-10 pb-10">
           <div className="relative -mx-4 sm:-mx-8 lg:mx-0 lg:col-start-6 lg:col-span-7 lg:row-start-1 h-80 sm:h-[28rem] lg:h-full overflow-hidden lg:rounded-[var(--radius-soft)]">
             <Image
-              src="/photos/entrance.jpg"
+              src="/photos/terrace.jpg"
               alt="Hotel Apollonia, Rruga Tirana, Gjakovë"
               fill
               priority
               sizes="(min-width: 1024px) 58vw, 100vw"
-              className="object-cover object-[56%_62%] animate-settle"
+              className="object-cover object-[62%_45%] animate-settle"
             />
           </div>
           <div className="relative lg:col-start-1 lg:col-span-6 lg:row-start-1 lg:self-center -mt-10 lg:mt-0 z-10">
