@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDictionary, isLocale, plural, fill } from "@/i18n";
@@ -7,6 +6,7 @@ import { roomBySlug } from "@/lib/engine";
 import { HOTEL, PRICING } from "@/lib/hotel";
 import { todayInGjakova } from "@/lib/dates";
 import { RateCalendar } from "@/components/rate-calendar";
+import { RoomGallery } from "@/components/room-gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -37,15 +37,19 @@ export default async function RoomPage({ params }: PageProps<"/[lang]/rooms/[slu
       </Link>
 
       <div className="mt-6 grid gap-10 lg:grid-cols-12">
-        <div className="lg:col-span-7 grid grid-cols-3 gap-3 content-start">
-          <div className={`relative ${room.images.length > 1 ? "col-span-2" : "col-span-3"} row-span-2 aspect-[4/5] overflow-hidden rounded-[var(--radius-soft)]`}>
-            <Image src={room.images[0]} alt={room.name[lang]} fill priority sizes="(min-width: 1024px) 38vw, 66vw" className="object-cover" />
-          </div>
-          {room.images.slice(1, 3).map((src) => (
-            <div key={src} className="relative overflow-hidden rounded-[var(--radius-soft)]">
-              <Image src={src} alt="" fill sizes="(min-width: 1024px) 19vw, 33vw" className="object-cover" />
-            </div>
-          ))}
+        <div className="lg:col-span-7">
+          <RoomGallery
+            images={room.images}
+            alt={room.name[lang]}
+            labels={{
+              showPhotos: plural(lang, t.rooms.showPhotos, room.images.length),
+              openPhoto: t.rooms.openPhoto,
+              close: t.rooms.closeGallery,
+              prev: t.rooms.prevPhoto,
+              next: t.rooms.nextPhoto,
+              count: t.rooms.photoCount,
+            }}
+          />
         </div>
         <div className="lg:col-span-5">
           <h1 className="text-4xl sm:text-5xl">{room.name[lang]}</h1>

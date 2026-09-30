@@ -71,6 +71,12 @@ const en = {
     nextMonth: "Next month",
     clear: "Clear dates",
     loading: "Loading prices",
+    showPhotos: { one: "Show photo", other: "Show all {n} photos" },
+    openPhoto: "Open photo {n}",
+    closeGallery: "Close gallery",
+    prevPhoto: "Previous photo",
+    nextPhoto: "Next photo",
+    photoCount: "{n} / {total}",
   },
   amenities: {
     wifi: "Fast Wi-Fi",

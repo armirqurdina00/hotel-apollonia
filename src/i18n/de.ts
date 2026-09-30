@@ -73,6 +73,12 @@ const de: Dictionary = {
     nextMonth: "Nächster Monat",
     clear: "Daten löschen",
     loading: "Preise werden geladen",
+    showPhotos: { one: "Foto ansehen", other: "Alle {n} Fotos ansehen" },
+    openPhoto: "Foto {n} öffnen",
+    closeGallery: "Galerie schließen",
+    prevPhoto: "Vorheriges Foto",
+    nextPhoto: "Nächstes Foto",
+    photoCount: "{n} / {total}",
   },
   amenities: {
     wifi: "Schnelles WLAN",

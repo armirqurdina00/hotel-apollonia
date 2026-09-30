@@ -73,6 +73,12 @@ const sq: Dictionary = {
     nextMonth: "Muaji tjetër",
     clear: "Pastro datat",
     loading: "Duke ngarkuar çmimet",
+    showPhotos: { one: "Shiko foton", other: "Shiko të {n} fotot" },
+    openPhoto: "Hap foton {n}",
+    closeGallery: "Mbyll galerinë",
+    prevPhoto: "Foto e mëparshme",
+    nextPhoto: "Foto e radhës",
+    photoCount: "{n} / {total}",
   },
   amenities: {
     wifi: "Wi-Fi i shpejtë",

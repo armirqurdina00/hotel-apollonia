@@ -444,3 +444,9 @@
   font-weight: 400;
 }
 
+@keyframes gallery-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
