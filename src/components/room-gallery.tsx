@@ -76,7 +76,7 @@ export function RoomGallery({ images, alt, labels }: { images: string[]; alt: st
               type="button"
               onClick={() => show(n)}
               aria-label={fill(labels.openPhoto, { n: n + 1 })}
-              className="group relative overflow-hidden rounded-[var(--radius-soft)] cursor-zoom-in"
+              className={`group relative ${rest.length === 1 ? "row-span-2" : ""} overflow-hidden rounded-[var(--radius-soft)] cursor-zoom-in`}
             >
               <Image src={src} alt="" fill sizes="(min-width: 1024px) 19vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.05]" />
               {more && <span className="absolute inset-0 grid place-items-center bg-forest/55 text-2xl font-semibold text-white">+{hidden}</span>}
