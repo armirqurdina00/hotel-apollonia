@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
-import { DayPicker, type DateRange } from "react-day-picker";
+import { DayPicker, type DateRange, type DayButtonProps } from "react-day-picker";
 import { sq, enGB, de } from "react-day-picker/locale";
 import { addDays, diffDays, formatDate } from "@/lib/dates";
 import { plural, type Locale, type Plural } from "@/i18n/config";
@@ -19,6 +19,23 @@ function toISO(d: Date | undefined) {
   if (!d) return "";
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+/**
+ * DayPicker's own day button calls focus() as soon as the calendar opens,
+ * before the popover has moved under its field, so the browser scrolled the
+ * page to wherever the panel briefly sat (the top). Focusing without scrolling
+ * keeps the page where it is; the panel then appears under the field.
+ */
+// `day` is taken out only so it doesn't reach the <button>.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function DayButton({ day, modifiers, ...props }: DayButtonProps) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (modifiers.focused) ref.current?.focus({ preventScroll: true });
+  }, [modifiers.focused]);
+  return <button ref={ref} {...props} />;
+}
+const COMPONENTS = { DayButton };
 
 function useIsWide() {
   const [wide, setWide] = useState(false);
@@ -150,6 +167,7 @@ export function DateRangeField({ lang, labels, min, maxNights = 30, checkIn, che
                 commit(d, undefined);
               }}
               classNames={{ root: "cal" }}
+              components={COMPONENTS}
             />
             <div className="mt-3 flex items-center gap-3 border-t border-line pt-3">
               <span className="text-sm text-muted">{nights ? plural(lang, labels.nights, nights) : ""}</span>
@@ -224,6 +242,7 @@ export function DateField({ lang, name, label, placeholder, min, max, defaultVal
                 close();
               }}
               classNames={{ root: "cal" }}
+              components={COMPONENTS}
             />
           </PopoverPanel>
         </>
