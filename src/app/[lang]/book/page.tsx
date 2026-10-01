@@ -75,7 +75,8 @@ export default async function BookPage({ params, searchParams }: PageProps<"/[la
                 </a>
               </p>
             )}
-            <ul className="mt-4">
+            {/* Phones: each room is a card; wider screens: rows divided by lines. */}
+            <ul className="mt-4 max-sm:mt-6 max-sm:space-y-5">
               {quotes.map((quote) => (
                 <ResultRow key={quote.room.id} quote={quote} stay={q} lang={lang} t={t} />
               ))}
@@ -97,12 +98,14 @@ function ResultRow({ quote, stay, lang, t }: { quote: Quote; stay: StayQuery; la
     rooms: String(stay.rooms),
   });
   return (
-    <li className={`grid gap-5 sm:grid-cols-[14rem_1fr] lg:grid-cols-[16rem_1fr_auto] lg:gap-8 py-7 border-t border-line first:border-t-0 ${quote.bookable ? "" : "opacity-60"}`}>
+    <li
+      className={`grid sm:grid-cols-[14rem_1fr] sm:gap-5 sm:border-t sm:border-line sm:py-7 sm:first:border-t-0 lg:grid-cols-[16rem_1fr_auto] lg:gap-8 max-sm:overflow-hidden max-sm:rounded-[var(--radius-soft)] max-sm:border max-sm:border-line max-sm:bg-white max-sm:shadow-[0_8px_24px_-16px_rgb(12_58_39/0.35)] ${quote.bookable ? "" : "opacity-60"}`}
+    >
       {/* The photo opens the room too; the name link below is the one for keyboards and screen readers. */}
-      <Link href={`/${lang}/rooms/${room.slug}?${qs}`} tabIndex={-1} aria-hidden className="group relative block aspect-[4/3] overflow-hidden rounded-[var(--radius-soft)]">
+      <Link href={`/${lang}/rooms/${room.slug}?${qs}`} tabIndex={-1} aria-hidden className="group relative block aspect-[4/3] overflow-hidden sm:rounded-[var(--radius-soft)]">
         <Image src={room.images[0]} alt="" fill sizes="16rem" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
       </Link>
-      <div>
+      <div className="max-sm:px-4 max-sm:pt-4">
         <h2 className="text-2xl sm:text-3xl">
           <Link href={`/${lang}/rooms/${room.slug}?${qs}`} className="hover:text-emerald">
             {room.name[lang]}
@@ -146,9 +149,10 @@ function ResultRow({ quote, stay, lang, t }: { quote: Quote; stay: StayQuery; la
           </ul>
         )}
         {quote.bookable && quote.minAvailable <= 3 && <p className="mt-3 text-sm font-semibold text-forest">{plural(lang, t.results.left, quote.minAvailable)}</p>}
+        {!quote.bookable && <div className="max-sm:h-4" />}
       </div>
       {quote.bookable && (
-        <div className="sm:col-start-2 lg:col-start-3 lg:self-end">
+        <div className="max-sm:p-4 sm:col-start-2 lg:col-start-3 lg:self-end">
           <Link href={`/${lang}/book/${room.slug}?${qs}`} className="btn btn-primary w-full lg:w-auto">
             {t.results.select}
           </Link>

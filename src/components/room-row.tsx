@@ -7,8 +7,9 @@ import { Price, withPrice } from "./price";
 export function RoomRow({ room, lang, t, fromCents, priority }: { room: RoomType; lang: Locale; t: Dictionary; fromCents: number; priority?: boolean }) {
   const href = `/${lang}/rooms/${room.slug}`;
   return (
-    <article className="group grid gap-5 md:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] md:gap-10 py-7 border-t border-line first:border-t-0">
-      <Link href={href} className="block overflow-hidden rounded-[var(--radius-soft)] aspect-[5/4] bg-line" tabIndex={-1} aria-hidden>
+    // Phones and small tablets: a card; wider: a row divided from the next by a line.
+    <article className="group grid md:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] md:gap-10 md:border-t md:border-line md:py-7 md:first:border-t-0 max-md:mb-5 max-md:overflow-hidden max-md:rounded-[var(--radius-soft)] max-md:border max-md:border-line max-md:bg-white max-md:shadow-[0_8px_24px_-16px_rgb(12_58_39/0.35)]">
+      <Link href={href} className="block overflow-hidden md:rounded-[var(--radius-soft)] aspect-[5/4] bg-line" tabIndex={-1} aria-hidden>
         <Image
           src={room.images[0]}
           alt=""
@@ -19,7 +20,7 @@ export function RoomRow({ room, lang, t, fromCents, priority }: { room: RoomType
           className="h-full w-full object-cover object-[50%_60%] transition-transform duration-500 group-hover:scale-[1.02]"
         />
       </Link>
-      <div className="flex flex-col">
+      <div className="flex flex-col max-md:p-4 max-md:pb-5">
         <h3 className="text-3xl">
           <Link href={href} className="hover:text-emerald">
             {room.name[lang]}
