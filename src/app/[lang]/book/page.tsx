@@ -11,7 +11,7 @@ import { todayInGjakova, addDays } from "@/lib/dates";
 import { SearchPanel } from "@/components/search-panel";
 import { searchLabels } from "@/components/search-labels";
 import { describeDates, describeGuests } from "@/components/stay-summary";
-import { LinkSpinner } from "@/components/link-spinner";
+import { CardPendingOverlay, PendingLabel, PendingMarker } from "@/components/link-spinner";
 
 export const dynamic = "force-dynamic";
 
@@ -100,20 +100,18 @@ function ResultRow({ quote, stay, lang, t }: { quote: Quote; stay: StayQuery; la
   });
   return (
     <li
-      className={`grid sm:grid-cols-[14rem_1fr] sm:gap-5 sm:border-t sm:border-line sm:py-7 sm:first:border-t-0 lg:grid-cols-[16rem_1fr_auto] lg:gap-8 max-sm:overflow-hidden max-sm:rounded-[var(--radius-soft)] max-sm:border max-sm:border-line max-sm:bg-white max-sm:shadow-[0_8px_24px_-16px_rgb(12_58_39/0.35)] ${quote.bookable ? "" : "opacity-60"}`}
+      // The room name's link is stretched over the whole card; only the booking button sits above it.
+      className={`group relative grid sm:grid-cols-[14rem_1fr] sm:gap-5 sm:border-t sm:border-line sm:py-7 sm:first:border-t-0 lg:grid-cols-[16rem_1fr_auto] lg:gap-8 max-sm:overflow-hidden max-sm:rounded-[var(--radius-soft)] max-sm:border max-sm:border-line max-sm:bg-white max-sm:shadow-[0_8px_24px_-16px_rgb(12_58_39/0.35)] ${quote.bookable ? "" : "opacity-60"}`}
     >
-      {/* The photo opens the room too; the name link below is the one for keyboards and screen readers. */}
-      <Link href={`/${lang}/rooms/${room.slug}?${qs}`} tabIndex={-1} aria-hidden className="group relative block aspect-[4/3] overflow-hidden sm:rounded-[var(--radius-soft)]">
+      <div className="relative aspect-[4/3] overflow-hidden sm:rounded-[var(--radius-soft)]">
         <Image src={room.images[0]} alt="" fill sizes="16rem" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-        <span className="pointer-events-none absolute inset-0 grid place-items-center text-white [&:has(svg.opacity-100)]:bg-forest/35">
-          <LinkSpinner className="size-9 drop-shadow" />
-        </span>
-      </Link>
+        <CardPendingOverlay />
+      </div>
       <div className="max-sm:px-4 max-sm:pt-4">
         <h2 className="text-2xl sm:text-3xl">
-          <Link href={`/${lang}/rooms/${room.slug}?${qs}`} className="inline-flex items-center gap-2 hover:text-emerald">
+          <Link href={`/${lang}/rooms/${room.slug}?${qs}`} className="group-hover:text-emerald after:absolute after:inset-0 after:content-['']">
             {room.name[lang]}
-            <LinkSpinner className="text-emerald" />
+            <PendingMarker />
           </Link>
         </h2>
         {quote.bookable ? (
@@ -157,10 +155,9 @@ function ResultRow({ quote, stay, lang, t }: { quote: Quote; stay: StayQuery; la
         {!quote.bookable && <div className="max-sm:h-4" />}
       </div>
       {quote.bookable && (
-        <div className="max-sm:p-4 sm:col-start-2 lg:col-start-3 lg:self-end">
-          <Link href={`/${lang}/book/${room.slug}?${qs}`} className="btn btn-primary relative w-full lg:w-auto">
-            {t.results.select}
-            <LinkSpinner className="absolute right-3" />
+        <div className="relative z-10 max-sm:p-4 sm:col-start-2 lg:col-start-3 lg:self-end">
+          <Link href={`/${lang}/book/${room.slug}?${qs}`} className="btn btn-primary w-full lg:w-auto">
+            <PendingLabel label={t.results.select} pending={t.results.opening} />
           </Link>
         </div>
       )}

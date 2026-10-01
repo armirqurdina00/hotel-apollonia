@@ -117,6 +117,7 @@ const en = {
     total: "Total for {nights}",
     discount: "{pct}% long-stay discount",
     select: "Book this room",
+    opening: "Opening…",
     perNight: "{price} per night",
     freeCancel: "Free cancellation",
     change: "Change dates",

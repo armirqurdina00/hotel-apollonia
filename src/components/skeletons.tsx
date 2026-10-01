@@ -1,6 +1,6 @@
 /**
- * Placeholders shown the instant a guest opens a room or the checkout, while
- * the real page (prices, availability) is fetched. Shapes follow the pages'
+ * Placeholders shown the instant a guest opens a room, while the real page
+ * (prices, availability) is fetched. Shapes follow the pages'
  * layouts so nothing jumps when the content arrives.
  */
 
@@ -50,52 +50,6 @@ export function RoomPageSkeleton() {
             <DarkBone key={i} className="h-14 sm:h-[4.25rem] !rounded-[4px]" />
           ))}
         </div>
-      </div>
-    </div>
-  );
-}
-
-export function CheckoutSkeleton() {
-  return (
-    <div className="wrap pt-10" aria-busy="true">
-      <Bone className="h-4 w-28" />
-      <div className="mt-6 grid gap-10 lg:grid-cols-12">
-        <aside className="lg:col-span-5 lg:col-start-8 lg:row-start-1">
-          <div className="crest rounded-[var(--radius-soft)] p-6 sm:p-7">
-            <DarkBone className="h-4 w-24" />
-            <div className="mt-4 flex gap-4">
-              <DarkBone className="size-20 shrink-0 !rounded-[4px]" />
-              <div className="flex-1">
-                <DarkBone className="h-7 w-3/4" />
-                <DarkBone className="mt-2 h-4 w-1/2" />
-              </div>
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              {[0, 1, 2, 3].map((i) => (
-                <DarkBone key={i} className="h-10" />
-              ))}
-            </div>
-            <DarkBone className="mt-6 h-8 w-1/2 ml-auto" />
-          </div>
-        </aside>
-        <section className="lg:col-span-7 lg:row-start-1">
-          <Bone className="h-12 w-2/3" />
-          <Bone className="mt-3 mb-8 h-4 w-1/2" />
-          <div className="grid gap-5">
-            {[0, 1, 2].map((row) => (
-              <div key={row} className="grid gap-5 sm:grid-cols-2">
-                {[0, 1].map((i) => (
-                  <div key={i}>
-                    <Bone className="h-4 w-24" />
-                    <Bone className="mt-2 h-12" />
-                  </div>
-                ))}
-              </div>
-            ))}
-            <Bone className="h-24" />
-            <Bone className="h-12 w-48" />
-          </div>
-        </section>
       </div>
     </div>
   );

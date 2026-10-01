@@ -119,6 +119,7 @@ const sq: Dictionary = {
     total: "Gjithsej për {nights}",
     discount: "{pct}% zbritje për qëndrim të gjatë",
     select: "Rezervo këtë dhomë",
+    opening: "Duke u hapur…",
     perNight: "{price} për natë",
     freeCancel: "Anulim falas",
     change: "Ndrysho datat",

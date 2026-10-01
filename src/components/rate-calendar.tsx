@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { addDays, addMonths, daysInMonth, formatMoney, monthStart, weekday, nightsBetween, formatDate, formatMonthYear, weekdayInitials } from "@/lib/dates";
 import { plural, type Locale, type Plural } from "@/i18n/config";
 import { Price, withPrice } from "./price";
-import { LinkSpinner } from "./link-spinner";
+import { PendingLabel } from "./link-spinner";
 
 type Day = { d: string; p: number; a: number; c: boolean };
 
@@ -23,6 +23,7 @@ export type CalendarLabels = {
   total: string;
   discount: string;
   perNight: string;
+  opening: string;
 };
 
 type Props = {
@@ -223,10 +224,9 @@ export function RateCalendar({ lang, slug, today, labels, lengthOfStay, party, i
               </button>
               <Link
                 href={`/${lang}/book/${slug}?${new URLSearchParams({ checkIn: checkIn!, checkOut: checkOut!, adults: String(party.adults), children: String(party.children), rooms: String(party.rooms) })}`}
-                className="btn btn-gold relative"
+                className="btn btn-gold"
               >
-                {labels.bookDates}
-                <LinkSpinner className="absolute right-3" />
+                <PendingLabel label={labels.bookDates} pending={labels.opening} />
               </Link>
             </div>
           </>

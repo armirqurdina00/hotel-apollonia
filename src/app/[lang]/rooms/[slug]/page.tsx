@@ -117,6 +117,7 @@ export default async function RoomPage({ params, searchParams }: PageProps<"/[la
             total: t.results.total,
             discount: t.results.discount,
             perNight: t.results.perNight,
+            opening: t.results.opening,
           }}
         />
       </section>

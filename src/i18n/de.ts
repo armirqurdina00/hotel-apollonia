@@ -119,6 +119,7 @@ const de: Dictionary = {
     total: "Gesamt für {nights}",
     discount: "{pct} % Rabatt für längere Aufenthalte",
     select: "Dieses Zimmer buchen",
+    opening: "Wird geöffnet…",
     perNight: "{price} pro Nacht",
     freeCancel: "Kostenlose Stornierung",
     change: "Daten ändern",
