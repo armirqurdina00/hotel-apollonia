@@ -93,7 +93,19 @@ export function SearchPanel({ lang, labels, today, initial = {}, layout = "stack
 
   return (
     // "#results" makes the browser land on the results, not back at the search form.
-    <form action={`/${lang}/book#results`} method="get" onSubmit={() => setSearching(true)} aria-busy={searching} className={bar ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_8.5rem_8.5rem_8.5rem_auto] lg:items-end" : "grid gap-4"}>
+    <form action={`/${lang}/book#results`} method="get" onSubmit={(e) => {
+        // Re-submitting the search already on screen asks for this very page plus "#results",
+        // which browsers treat as a jump within the page: nothing loads and the spinner would never stop.
+        const asked = new URLSearchParams([...new FormData(e.currentTarget)].map(([k, v]) => [k, String(v)]));
+        const shown = new URLSearchParams(window.location.search);
+        const same = (a: URLSearchParams) => [...a].map(([k, v]) => `${k}=${v}`).sort().join("&");
+        if (new URL(e.currentTarget.action).pathname === window.location.pathname && same(asked) === same(shown)) {
+          e.preventDefault();
+          document.getElementById("results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        setSearching(true);
+      }} aria-busy={searching} className={bar ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_8.5rem_8.5rem_8.5rem_auto] lg:items-end" : "grid gap-4"}>
       <div className={bar ? "sm:col-span-2 lg:col-span-1" : ""}>
         <DateRangeField
           lang={lang}
