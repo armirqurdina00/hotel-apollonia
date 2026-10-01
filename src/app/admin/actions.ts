@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, asc, count, eq, gte, lte, max } from "drizzle-orm";
 import { z } from "zod";
 import { db, bookings, dayOverrides, inquiries, media, roomTypes, BOOKING_STATUSES } from "@/db";
 import { ADMIN_COOKIE, adminCookieOptions, checkAdminPassword, createAdminSession } from "@/lib/auth";
@@ -202,7 +202,8 @@ const roomDetails = z.object({
 export async function saveRoomDetails(_: AdminState, form: FormData): Promise<AdminState> {
   await requireAdmin();
   const { t } = await getAdminI18n();
-  const id = Number(form.get("id"));
+  // No id means a new room type.
+  const id = Number(form.get("id")) || 0;
   const text = (field: string) => ({
     sq: String(form.get(`${field}.sq`) ?? ""),
     en: String(form.get(`${field}.en`) ?? ""),
@@ -233,6 +234,15 @@ export async function saveRoomDetails(_: AdminState, form: FormData): Promise<Ad
     };
     return { error: messages[field] ?? t.room.errInvalid };
   }
+  if (!id) {
+    const [{ last }] = await db.select({ last: max(roomTypes.sortOrder) }).from(roomTypes);
+    const [created] = await db
+      .insert(roomTypes)
+      .values({ ...parsed.data, slug: await uniqueRoomSlug(parsed.data.name.en || parsed.data.name.sq), sortOrder: (last ?? 0) + 1 })
+      .returning({ id: roomTypes.id });
+    revalidatePath("/admin", "layout");
+    redirect(`/admin/rooms/${created.id}?created=1`);
+  }
   const updated = await db.update(roomTypes).set(parsed.data).where(eq(roomTypes.id, id)).returning({ id: roomTypes.id });
   if (updated.length === 0) return { error: t.room.errGone };
   revalidatePath("/admin/rooms");
@@ -259,6 +269,49 @@ export async function translateRoomText(sq: RoomText): Promise<TranslateResult> 
     console.error("[translate]", e);
     return { error: t.room.translateFailed };
   }
+}
+
+/** The room page's address, from its name: "Family suite" → "family-suite", "-2" if taken. */
+async function uniqueRoomSlug(name: string) {
+  const base =
+    name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "room";
+  const taken = new Set((await db.select({ slug: roomTypes.slug }).from(roomTypes)).map((r) => r.slug));
+  let slug = base;
+  for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+  return slug;
+}
+
+/** Deletes a room type that has never been booked; booked ones can only be taken off sale. */
+export async function deleteRoomType(id: number): Promise<AdminState> {
+  await requireAdmin();
+  const { lang, t } = await getAdminI18n();
+  const [{ n }] = await db.select({ n: count() }).from(bookings).where(eq(bookings.roomTypeId, id));
+  if (n > 0) return { error: fill(t.room.deleteBlocked, { n: plural(lang, t.room.bookings, n) }) };
+  await db.delete(dayOverrides).where(eq(dayOverrides.roomTypeId, id));
+  await db.delete(roomTypes).where(eq(roomTypes.id, id));
+  revalidatePath("/admin", "layout");
+  redirect("/admin/rooms");
+}
+
+/** Moves a room type one place up or down in the website's room list. */
+export async function moveRoomType(form: FormData) {
+  await requireAdmin();
+  const id = Number(form.get("id"));
+  const by = form.get("dir") === "up" ? -1 : 1;
+  const order = (await db.select({ id: roomTypes.id }).from(roomTypes).orderBy(asc(roomTypes.sortOrder), asc(roomTypes.id))).map((r) => r.id);
+  const i = order.indexOf(id);
+  const j = i + by;
+  if (i < 0 || j < 0 || j >= order.length) return;
+  [order[i], order[j]] = [order[j], order[i]];
+  // Rewrite every position so ties or gaps from older data can't confuse the order.
+  for (const [n, roomId] of order.entries()) await db.update(roomTypes).set({ sortOrder: n + 1 }).where(eq(roomTypes.id, roomId));
+  revalidatePath("/admin/rooms");
 }
 
 const MAX_UPLOAD = 3.5 * 1024 * 1024;

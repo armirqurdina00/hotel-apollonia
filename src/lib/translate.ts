@@ -67,5 +67,7 @@ export async function translate(text: string, from: string, to: string) {
   if (!text.trim()) return "";
   const parts: string[] = [];
   for (const piece of chunks(text)) parts.push(await translatePiece(piece, from, to));
-  return parts.join("").trim();
+  const out = parts.join("").trim();
+  // MyMemory turns short phrases into sentences ("Suite with Jacuzzi."); keep names and bed types bare.
+  return /[.!?]$/.test(text.trim()) ? out : out.replace(/\.$/, "");
 }

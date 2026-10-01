@@ -49,7 +49,7 @@ const en = {
   },
   rooms: {
     title: "Rooms",
-    lead: "Five room types, all with a private bathroom, air conditioning, fast Wi-Fi and breakfast.",
+    lead: "Every room has a private bathroom, air conditioning, fast Wi-Fi and breakfast.",
     from: "from {price}",
     perNight: "per night",
     upTo: { one: "up to {n} guest", other: "up to {n} guests" },

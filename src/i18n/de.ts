@@ -51,7 +51,7 @@ const de: Dictionary = {
   },
   rooms: {
     title: "Zimmer",
-    lead: "Fünf Zimmerkategorien, alle mit eigenem Bad, Klimaanlage, schnellem WLAN und Frühstück.",
+    lead: "Alle Zimmer mit eigenem Bad, Klimaanlage, schnellem WLAN und Frühstück.",
     from: "ab {price}",
     perNight: "pro Nacht",
     upTo: { one: "bis zu {n} Gast", other: "bis zu {n} Gäste" },

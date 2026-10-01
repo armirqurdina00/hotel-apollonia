@@ -12,6 +12,7 @@ import { LOCALES, LOCALE_NAMES, type Locale } from "@/i18n/config";
 type Localized = Record<Locale, string>;
 
 export type RoomFormValues = {
+  /** 0 for a room type that doesn't exist yet. */
   id: number;
   name: Localized;
   summary: Localized;
@@ -78,7 +79,7 @@ export function RoomForm({ room, photos, amenities }: { room: RoomFormValues; ph
         startTransition(() => action(data));
       }}
     >
-      <input type="hidden" name="id" value={room.id} />
+      {room.id > 0 && <input type="hidden" name="id" value={room.id} />}
       {images.map((src) => (
         <input key={src} type="hidden" name="images" value={src} />
       ))}
@@ -222,7 +223,7 @@ export function RoomForm({ room, photos, amenities }: { room: RoomFormValues; ph
 
       <div className="sticky bottom-0 -mx-1 flex flex-wrap items-center gap-4 border-t border-line bg-canvas/95 px-1 py-4 backdrop-blur">
         <button className="btn btn-primary" disabled={pending}>
-          {pending ? t.saving : t.saveChanges}
+          {pending ? t.saving : room.id ? t.saveChanges : r.create}
         </button>
         {state.error && (
           <p role="alert" className="text-danger">

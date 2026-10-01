@@ -51,7 +51,7 @@ const sq: Dictionary = {
   },
   rooms: {
     title: "Dhomat",
-    lead: "Pesë lloje dhomash, të gjitha me banjo private, kondicioner, Wi-Fi të shpejtë dhe mëngjes.",
+    lead: "Të gjitha dhomat kanë banjo private, kondicioner, Wi-Fi të shpejtë dhe mëngjes.",
     from: "nga {price}",
     perNight: "për natë",
     upTo: { one: "deri në {n} person", other: "deri në {n} persona" },
