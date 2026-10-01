@@ -57,7 +57,7 @@ export default async function BookPage({ params, searchParams }: PageProps<"/[la
         </div>
       </div>
 
-      <div className="wrap pt-8">
+      <div id="results" className="wrap pt-8 scroll-mt-20">
         {stay && !stay.ok && (
           <p role="alert" className="rounded-[var(--radius-soft)] border border-danger/40 bg-white p-4 text-danger">
             {fill(t.errors[stay.error], { max: HOTEL.maxNights })}

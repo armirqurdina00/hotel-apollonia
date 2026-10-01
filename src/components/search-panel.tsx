@@ -82,7 +82,8 @@ export function SearchPanel({ lang, labels, today, initial = {}, layout = "stack
   const bar = layout === "bar";
 
   return (
-    <form action={`/${lang}/book`} method="get" className={bar ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_8.5rem_8.5rem_8.5rem_auto] lg:items-end" : "grid gap-4"}>
+    // "#results" makes the browser land on the results, not back at the search form.
+    <form action={`/${lang}/book#results`} method="get" className={bar ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_8.5rem_8.5rem_8.5rem_auto] lg:items-end" : "grid gap-4"}>
       <div className={bar ? "sm:col-span-2 lg:col-span-1" : ""}>
         <DateRangeField
           lang={lang}
@@ -105,7 +106,8 @@ export function SearchPanel({ lang, labels, today, initial = {}, layout = "stack
           }}
         />
       </div>
-      <div className={bar ? "contents" : "grid grid-cols-3 gap-3"}>
+      {/* Below desktop the counters share one row, as in the homepage hero; on desktop they join the single-line bar. */}
+      <div className={bar ? "grid grid-cols-3 gap-3 sm:col-span-2 lg:contents" : "grid grid-cols-3 gap-3"}>
         <Counter label={labels.adults} name="adults" value={adults} min={1} max={12} onChange={setAdults} />
         <Counter label={labels.children} name="children" value={children} min={0} max={8} onChange={setChildren} />
         <Counter label={labels.rooms} name="rooms" value={rooms} min={1} max={5} onChange={setRooms} />
