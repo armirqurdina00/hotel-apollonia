@@ -89,6 +89,10 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
                 <Image src="/photos/coffee.jpg" alt="" fill sizes="(min-width: 1024px) 20vw, 40vw" className="object-cover" />
               </div>
             </div>
+            {/* Desktop only: fills the column beside the table form; phones already stack the photos above it. */}
+            <div className="col-span-5 relative hidden lg:block aspect-[4/3] overflow-hidden rounded-[var(--radius-soft)]">
+              <Image src="/photos/restaurant-hall.jpg" alt="" fill sizes="30vw" className="object-cover object-[50%_62%]" />
+            </div>
           </div>
           <div className="lg:col-span-5 lg:col-start-8">
             <h2 className="text-4xl sm:text-5xl">{t.restaurant.title}</h2>
