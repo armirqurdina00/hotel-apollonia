@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { count, eq, and } from "drizzle-orm";
 import { db, bookings, inquiries } from "@/db";
-import { requireAdmin } from "@/lib/admin";
+import { getAdminI18n, latestIds, requireAdmin } from "@/lib/admin";
 import { logoutAction } from "../actions";
 import { AdminNav } from "@/components/admin/nav";
+import { LiveUpdates } from "@/components/admin/live-updates";
+import { AdminLangSwitch } from "@/components/admin/lang-switch";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
-  const [[pending], [newInq]] = await Promise.all([
+  const { lang, t } = await getAdminI18n();
+  const [[pending], [newInq], latest] = await Promise.all([
     db.select({ n: count() }).from(bookings).where(eq(bookings.status, "pending")),
     db.select({ n: count() }).from(inquiries).where(and(eq(inquiries.status, "new"))),
+    latestIds(),
   ]);
 
   return (
@@ -22,11 +26,15 @@ export default async function PanelLayout({ children }: { children: React.ReactN
         </Link>
         <AdminNav badges={{ bookings: pending.n, inquiries: newInq.n }} />
         <div className="lg:mt-auto flex lg:flex-col gap-2 shrink-0">
+          <LiveUpdates initial={latest} />
+          <div className="px-1 py-1">
+            <AdminLangSwitch lang={lang} />
+          </div>
           <Link href="/sq" className="text-sm text-white/70 hover:text-white px-3 py-2" target="_blank">
-            View website
+            {t.nav.viewWebsite}
           </Link>
           <form action={logoutAction}>
-            <button className="text-sm text-white/70 hover:text-white px-3 py-2">Sign out</button>
+            <button className="text-sm text-white/70 hover:text-white px-3 py-2">{t.nav.signOut}</button>
           </form>
         </div>
       </aside>

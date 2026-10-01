@@ -39,8 +39,11 @@ export function nightsBetween(checkIn: ISODate, checkOut: ISODate): ISODate[] {
 }
 
 /** Today's date in Kosovo. */
+/** Kosovo's time zone (CET/CEST). */
+const HOTEL_TZ = "Europe/Belgrade";
+
 export function todayInGjakova(): ISODate {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Belgrade" }).format(new Date());
+  return new Intl.DateTimeFormat("en-CA", { timeZone: HOTEL_TZ }).format(new Date());
 }
 
 export function weekday(d: ISODate): number {
@@ -112,6 +115,17 @@ export function formatMonthYear(d: ISODate, locale: Lang) {
 export function weekdayInitials(locale: Lang) {
   const n = NAMES[locale].daysNarrow;
   return [...n.slice(1), n[0]];
+}
+
+/**
+ * A UTC timestamp as SQLite stores it ("2026-10-01 08:48:29") shown in hotel
+ * time (Kosovo, summer and winter time handled): "Thu, 1 Oct 2026, 10:48".
+ */
+export function formatDateTime(utc: string, locale: Lang, style?: DateStyle) {
+  const at = new Date(utc.replace(" ", "T") + "Z");
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: HOTEL_TZ }).format(at);
+  const time = new Intl.DateTimeFormat("en-GB", { timeZone: HOTEL_TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(at);
+  return `${formatDate(day, locale, style)}, ${time}`;
 }
 
 export function formatMoney(cents: number, locale: Lang = "en") {

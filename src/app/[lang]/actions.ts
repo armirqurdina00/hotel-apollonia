@@ -6,9 +6,10 @@ import { z } from "zod";
 import { db, bookings, inquiries, roomTypes } from "@/db";
 import { cancellationOpen, createBooking, SoldOutError, validateStay } from "@/lib/engine";
 import { bookingToken, verifyBookingToken } from "@/lib/auth";
-import { sendBookingEmails, sendCancellationEmail, sendInquiryNotification } from "@/lib/email";
+import { sendBookingEmails, sendCancellationEmail, sendInquiryEmails } from "@/lib/email";
 import { isLocale, type Locale } from "@/i18n/config";
 import { isISODate } from "@/lib/dates";
+import { isMeetingDuration } from "@/lib/hotel";
 
 export type FormState = {
   error?: string;
@@ -114,7 +115,7 @@ export async function cancelBookingAction(_: FormState, form: FormData): Promise
     .set({ status: "cancelled", updatedAt: new Date().toISOString().replace("T", " ").slice(0, 19) })
     .where(eq(bookings.id, row.booking.id))
     .returning();
-  await sendCancellationEmail(updated, row.room);
+  await sendCancellationEmail(updated, row.room, "guest");
   redirect(`/${lang}/booking/${ref}?t=${token}`);
 }
 
@@ -150,6 +151,8 @@ export async function inquiryAction(_: FormState, form: FormData): Promise<FormS
   if (!parsed.success) return { fields: fieldErrors(parsed.error), values };
   if (parsed.data.website) return { ok: true };
   const d = parsed.data;
+  // Tables send a clock time; conference rooms one of MEETING_DURATIONS.
+  if (d.time && !(d.kind === "meeting" ? isMeetingDuration(d.time) : /^\d{2}:\d{2}$/.test(d.time))) return { fields: { time: "required" }, values };
   const [row] = await db
     .insert(inquiries)
     .values({
@@ -164,6 +167,6 @@ export async function inquiryAction(_: FormState, form: FormData): Promise<FormS
       locale: isLocale(values.lang) ? values.lang : "sq",
     })
     .returning();
-  await sendInquiryNotification(row);
+  await sendInquiryEmails(row);
   return { ok: true };
 }

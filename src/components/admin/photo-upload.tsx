@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { uploadRoomPhoto } from "@/app/admin/actions";
 import type { LibraryPhoto } from "@/lib/photos";
+import { fill, plural } from "@/i18n/config";
+import { useAdminI18n } from "./i18n";
 
 const MAX_EDGE = 2000;
 
@@ -33,10 +35,12 @@ export function PhotoUpload({ onUploaded }: { onUploaded: (photo: LibraryPhoto) 
   const [busy, setBusy] = useState<{ done: number; total: number } | null>(null);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const { lang, t } = useAdminI18n();
+  const u = t.upload;
 
   async function upload(files: File[]) {
     const photos = files.filter((f) => f.type.startsWith("image/") || /\.hei[cf]$/i.test(f.name));
-    if (photos.length === 0) return setMessage({ tone: "error", text: "Those files aren't photos." });
+    if (photos.length === 0) return setMessage({ tone: "error", text: u.notPhotos });
     setMessage(null);
     const failed: string[] = [];
     for (let i = 0; i < photos.length; i++) {
@@ -54,13 +58,13 @@ export function PhotoUpload({ onUploaded }: { onUploaded: (photo: LibraryPhoto) 
         if (res.src) onUploaded({ src: res.src, name, uploaded: true });
         else failed.push(`${file.name}: ${res.error}`);
       } catch {
-        failed.push(`${file.name}: this browser can't read it. Save it as a JPEG and try again.`);
+        failed.push(`${file.name}: ${u.unreadable}`);
       }
     }
     setBusy(null);
     const ok = photos.length - failed.length;
-    if (failed.length) setMessage({ tone: "error", text: `${ok ? `Uploaded ${ok}. ` : ""}Couldn't upload ${failed.join("; ")}` });
-    else setMessage({ tone: "ok", text: `Uploaded ${ok} photo${ok === 1 ? "" : "s"} and added ${ok === 1 ? "it" : "them"} above. Click Save changes to publish.` });
+    if (failed.length) setMessage({ tone: "error", text: (ok ? fill(u.partial, { n: ok }) : "") + fill(u.failed, { list: failed.join("; ") }) });
+    else setMessage({ tone: "ok", text: plural(lang, u.done, ok) });
   }
 
   return (
@@ -84,16 +88,16 @@ export function PhotoUpload({ onUploaded }: { onUploaded: (photo: LibraryPhoto) 
         </svg>
         {busy ? (
           <p className="font-semibold" role="status">
-            Uploading {busy.done + 1} of {busy.total}…
+            {fill(u.progress, { i: busy.done + 1, n: busy.total })}
           </p>
         ) : (
           <>
             <p>
               <button type="button" onClick={() => input.current?.click()} className="btn btn-primary !min-h-10 !py-2">
-                Upload photos
+                {u.button}
               </button>
             </p>
-            <p className="text-sm text-muted">or drag them here. Large photos are resized automatically.</p>
+            <p className="text-sm text-muted">{u.hint}</p>
           </>
         )}
         <input
@@ -123,6 +127,8 @@ export function DeletePhoto({ name, onDelete }: { name: string; onDelete: () => 
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { t } = useAdminI18n();
+  const u = t.upload;
   return (
     <>
       <button
@@ -137,11 +143,11 @@ export function DeletePhoto({ name, onDelete }: { name: string; onDelete: () => 
           if (err) setError(err);
         }}
         onBlur={() => setConfirming(false)}
-        aria-label={confirming ? `Confirm deleting ${name}` : `Delete ${name}`}
-        title={confirming ? "Click again to delete for good" : "Delete this uploaded photo"}
+        aria-label={fill(confirming ? u.confirmDelete : u.delete, { name })}
+        title={confirming ? u.confirmTitle : u.deleteTitle}
         className={`absolute right-1 top-1 rounded-full text-xs font-semibold shadow ${confirming ? "bg-danger px-2 py-1 text-white" : "grid size-6 place-items-center bg-white/95 text-danger hover:bg-white"}`}
       >
-        {confirming ? "Delete?" : "×"}
+        {confirming ? u.deleteShort : "×"}
       </button>
       {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </>

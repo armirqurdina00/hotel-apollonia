@@ -7,10 +7,13 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import { db, bookings, dayOverrides, inquiries, media, roomTypes, BOOKING_STATUSES } from "@/db";
 import { ADMIN_COOKIE, adminCookieOptions, checkAdminPassword, createAdminSession } from "@/lib/auth";
-import { requireAdmin } from "@/lib/admin";
+import { getAdminI18n, requireAdmin } from "@/lib/admin";
+import { ADMIN_LANG_COOKIE, isAdminLang } from "@/i18n/admin";
+import { fill, plural } from "@/i18n/config";
 import { createBooking, SoldOutError, validateStay } from "@/lib/engine";
-import { sendBookingEmails, sendCancellationEmail } from "@/lib/email";
+import { sendBookingConfirmedEmail, sendBookingEmails, sendCancellationEmail } from "@/lib/email";
 import { addDays, isISODate, nightsBetween } from "@/lib/dates";
+import { translate, TranslateError } from "@/lib/translate";
 
 export type AdminState = { error?: string; ok?: string };
 
@@ -22,18 +25,27 @@ const failures = new Map<string, { n: number; until: number }>();
 export async function loginAction(_: AdminState, form: FormData): Promise<AdminState> {
   const key = "global";
   const f = failures.get(key);
-  if (f && f.until > Date.now()) return { error: "Too many attempts. Wait a minute and try again." };
+  const { t } = await getAdminI18n();
+  if (f && f.until > Date.now()) return { error: t.login.tooMany };
 
   if (!checkAdminPassword(String(form.get("password") ?? ""))) {
     const n = (f?.n ?? 0) + 1;
     failures.set(key, { n, until: n >= 5 ? Date.now() + 60_000 : 0 });
-    return { error: "That password isn't right." };
+    return { error: t.login.wrong };
   }
   failures.delete(key);
   const jar = await cookies();
   jar.set(ADMIN_COOKIE, await createAdminSession(), adminCookieOptions);
   const next = String(form.get("next") ?? "");
   redirect(next.startsWith("/admin") ? next : "/admin");
+}
+
+/** Switches the staff panel between Albanian and English for this browser. */
+export async function setAdminLang(form: FormData) {
+  const lang = form.get("lang");
+  if (!isAdminLang(lang)) return;
+  (await cookies()).set(ADMIN_LANG_COOKIE, lang, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
+  revalidatePath("/admin", "layout");
 }
 
 export async function logoutAction() {
@@ -59,9 +71,11 @@ export async function setBookingStatus(form: FormData) {
   }
 
   const [after] = await db.update(bookings).set({ status, updatedAt: now() }).where(eq(bookings.id, id)).returning();
-  if (status === "cancelled" && before.status !== "cancelled" && form.get("notify") === "on") {
+  const guestNews = (status === "cancelled" && form.get("notify") === "on") || (status === "confirmed" && before.status === "pending");
+  if (guestNews && after.email) {
     const [room] = await db.select().from(roomTypes).where(eq(roomTypes.id, after.roomTypeId));
-    await sendCancellationEmail(after, room);
+    if (status === "cancelled") await sendCancellationEmail(after, room, "hotel");
+    else await sendBookingConfirmedEmail(after, room);
   }
   revalidatePath("/admin", "layout");
 }
@@ -76,10 +90,11 @@ export async function saveInternalNote(form: FormData) {
 
 export async function createManualBooking(_: AdminState, form: FormData): Promise<AdminState> {
   await requireAdmin();
+  const { t } = await getAdminI18n();
   const v = Object.fromEntries([...form.entries()].map(([k, x]) => [k, String(x)]));
   const stay = validateStay(v);
-  if (!stay.ok) return { error: `Check the dates and guests (${stay.error}).` };
-  if (!v.firstName || !v.lastName || !v.phone) return { error: "First name, last name and phone are required." };
+  if (!stay.ok) return { error: t.newBooking.errStay };
+  if (!v.firstName || !v.lastName || !v.phone) return { error: t.newBooking.errRequired };
 
   try {
     const { booking, room } = await createBooking({
@@ -103,21 +118,23 @@ export async function createManualBooking(_: AdminState, form: FormData): Promis
     revalidatePath("/admin", "layout");
     redirect(`/admin/bookings/${booking.id}`);
   } catch (e) {
-    if (e instanceof SoldOutError) return { error: "No room of that type is free for every night of this stay, or the party is too large for it." };
+    if (e instanceof SoldOutError) return { error: t.newBooking.errSoldOut };
     throw e;
   }
 }
 
 export async function saveOverrides(_: AdminState, form: FormData): Promise<AdminState> {
   await requireAdmin();
+  const { lang, t } = await getAdminI18n();
+  const o = t.overrides;
   const roomTypeId = Number(form.get("roomTypeId"));
   const from = String(form.get("from"));
   const to = String(form.get("to"));
   const mode = String(form.get("mode"));
-  if (!isISODate(from) || !isISODate(to) || to < from) return { error: "Choose a valid date range." };
+  if (!isISODate(from) || !isISODate(to) || to < from) return { error: o.errRange };
   // Inclusive of both ends: each date is a night that can be sold.
   const dates = nightsBetween(from, addDays(to, 1));
-  if (dates.length > 366) return { error: "Choose at most one year at a time." };
+  if (dates.length > 366) return { error: o.errYear };
 
   const rooms = roomTypeId ? [roomTypeId] : (await db.select({ id: roomTypes.id }).from(roomTypes)).map((r) => r.id);
 
@@ -126,12 +143,12 @@ export async function saveOverrides(_: AdminState, form: FormData): Promise<Admi
       await db.delete(dayOverrides).where(and(eq(dayOverrides.roomTypeId, id), gte(dayOverrides.date, from), lte(dayOverrides.date, to)));
     }
     revalidatePath("/admin/calendar");
-    return { ok: `Automatic prices and full availability restored for ${dates.length} day(s).` };
+    return { ok: fill(o.resetDone, { days: plural(lang, o.days, dates.length) }) };
   }
 
   const priceRaw = String(form.get("price") ?? "").trim().replace(",", ".");
   const price = priceRaw === "" ? null : Math.round(Number(priceRaw) * 100);
-  if (price !== null && (!Number.isFinite(price) || price < 0)) return { error: "Enter the price in euros, like 55." };
+  if (price !== null && (!Number.isFinite(price) || price < 0)) return { error: o.errPrice };
   const blocked = Math.max(0, Number(form.get("blockedUnits") || 0) | 0);
   const closed = form.get("closed") === "on";
 
@@ -144,7 +161,7 @@ export async function saveOverrides(_: AdminState, form: FormData): Promise<Admi
     }
   }
   revalidatePath("/admin/calendar");
-  return { ok: `Saved ${dates.length} day(s) for ${rooms.length} room type(s).` };
+  return { ok: fill(o.saved, { days: plural(lang, o.days, dates.length), rooms: plural(lang, o.roomTypes, rooms.length) }) };
 }
 
 export async function updateRoomType(form: FormData) {
@@ -184,6 +201,7 @@ const roomDetails = z.object({
 
 export async function saveRoomDetails(_: AdminState, form: FormData): Promise<AdminState> {
   await requireAdmin();
+  const { t } = await getAdminI18n();
   const id = Number(form.get("id"));
   const text = (field: string) => ({
     sq: String(form.get(`${field}.sq`) ?? ""),
@@ -207,19 +225,40 @@ export async function saveRoomDetails(_: AdminState, form: FormData): Promise<Ad
   if (!parsed.success) {
     const field = String(parsed.error.issues[0]?.path[0] ?? "");
     const messages: Record<string, string> = {
-      name: "Give the room a name in all three languages.",
-      images: "Choose at least one photo.",
-      basePriceCents: "Enter a base price above zero.",
-      sizeM2: "Enter the room size in m².",
-      maxAdults: "Allow at least one adult.",
+      name: t.room.errName,
+      images: t.room.errImages,
+      basePriceCents: t.room.errPrice,
+      sizeM2: t.room.errSize,
+      maxAdults: t.room.errAdults,
     };
-    return { error: messages[field] ?? "Some fields aren't valid. Check the numbers and try again." };
+    return { error: messages[field] ?? t.room.errInvalid };
   }
   const updated = await db.update(roomTypes).set(parsed.data).where(eq(roomTypes.id, id)).returning({ id: roomTypes.id });
-  if (updated.length === 0) return { error: "This room type no longer exists." };
+  if (updated.length === 0) return { error: t.room.errGone };
   revalidatePath("/admin/rooms");
   revalidatePath(`/admin/rooms/${id}`);
-  return { ok: "Saved. The website shows the changes now." };
+  return { ok: t.room.saved };
+}
+
+export type RoomText = { name: string; bed: string; summary: string; description: string };
+export type TranslateResult = { en?: RoomText; de?: RoomText; error?: string };
+
+/** Machine-translates a room's Albanian text into English and German, for staff to review. */
+export async function translateRoomText(sq: RoomText): Promise<TranslateResult> {
+  await requireAdmin();
+  const { t } = await getAdminI18n();
+  const fields = ["name", "bed", "summary", "description"] as const;
+  const text = Object.fromEntries(fields.map((f) => [f, String(sq[f] ?? "").slice(0, 4000)])) as RoomText;
+  if (!text.name.trim() && !text.description.trim()) return { error: t.room.translateEmpty };
+  try {
+    const into = async (to: "en" | "de") => Object.fromEntries(await Promise.all(fields.map(async (f) => [f, await translate(text[f], "sq", to)]))) as RoomText;
+    const [en, de] = await Promise.all([into("en"), into("de")]);
+    return { en, de };
+  } catch (e) {
+    if (e instanceof TranslateError && e.reason === "quota") return { error: t.room.translateQuota };
+    console.error("[translate]", e);
+    return { error: t.room.translateFailed };
+  }
 }
 
 const MAX_UPLOAD = 3.5 * 1024 * 1024;
@@ -236,12 +275,13 @@ export type UploadResult = { src?: string; error?: string };
 
 export async function uploadRoomPhoto(form: FormData): Promise<UploadResult> {
   await requireAdmin();
+  const { t } = await getAdminI18n();
   const file = form.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose a photo to upload." };
-  if (file.size > MAX_UPLOAD) return { error: "That photo is too large. Try a smaller one." };
+  if (!(file instanceof File) || file.size === 0) return { error: t.upload.errChoose };
+  if (file.size > MAX_UPLOAD) return { error: t.upload.errTooLarge };
   const data = Buffer.from(await file.arrayBuffer());
   const contentType = sniffImage(data);
-  if (!contentType) return { error: "That file isn't a photo we can use. Upload a JPEG, PNG, WebP or HEIC photo." };
+  if (!contentType) return { error: t.upload.errNotPhoto };
   const size = (key: string) => Math.min(10000, Math.max(1, Number(form.get(key)) | 0));
   const [row] = await db
     .insert(media)
@@ -259,11 +299,12 @@ export async function uploadRoomPhoto(form: FormData): Promise<UploadResult> {
 /** Deletes an uploaded photo, unless a room still uses it. */
 export async function deleteUploadedPhoto(src: string): Promise<UploadResult> {
   await requireAdmin();
+  const { lang, t } = await getAdminI18n();
   const id = Number(/^\/media\/(\d+)$/.exec(src)?.[1]);
-  if (!id) return { error: "Only uploaded photos can be deleted here." };
+  if (!id) return { error: t.upload.errOnlyUploaded };
   const rooms = await db.select({ name: roomTypes.name, images: roomTypes.images }).from(roomTypes);
-  const using = rooms.filter((r) => r.images.includes(src)).map((r) => r.name.en);
-  if (using.length) return { error: `Still used by ${using.join(", ")}. Remove it there first.` };
+  const using = rooms.filter((r) => r.images.includes(src)).map((r) => r.name[lang]);
+  if (using.length) return { error: fill(t.upload.errInUse, { rooms: using.join(", ") }) };
   await db.delete(media).where(eq(media.id, id));
   return {};
 }

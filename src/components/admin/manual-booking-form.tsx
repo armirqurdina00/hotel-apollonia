@@ -4,9 +4,12 @@ import { useActionState } from "react";
 import { createManualBooking, type AdminState } from "@/app/admin/actions";
 import { DateRangeField } from "@/components/ui/date-picker";
 import { SelectField } from "@/components/ui/select";
+import { useAdminI18n } from "./i18n";
 
 export function ManualBookingForm({ rooms, today, tomorrow }: { rooms: { id: number; name: string }[]; today: string; tomorrow: string }) {
   const [state, action, pending] = useActionState<AdminState, FormData>(createManualBooking, {});
+  const { lang, t } = useAdminI18n();
+  const m = t.newBooking;
   const f = (name: string, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <div>
       <label htmlFor={`mb-${name}`} className="field-label">
@@ -23,53 +26,68 @@ export function ManualBookingForm({ rooms, today, tomorrow }: { rooms: { id: num
         </p>
       )}
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="font-semibold mb-3">Stay</legend>
-        <SelectField name="roomTypeId" label="Room type" className="sm:col-span-2" defaultValue={String(rooms[0]?.id ?? "")} options={rooms.map((r) => ({ value: String(r.id), label: r.name }))} />
+        <legend className="font-semibold mb-3">{m.stay}</legend>
+        <SelectField name="roomTypeId" label={m.roomType} className="sm:col-span-2" defaultValue={String(rooms[0]?.id ?? "")} options={rooms.map((r) => ({ value: String(r.id), label: r.name }))} />
         <div className="sm:col-span-2">
-          <span className="field-label">Dates</span>
-          <DateRangeField lang="en" min={today} checkIn={today} checkOut={tomorrow} labels={{ checkIn: "Arrival", checkOut: "Departure", pickCheckIn: "Select the arrival day", pickCheckOut: "Now select the departure day", nights: { one: "{n} night", other: "{n} nights" }, clear: "Clear", done: "Done", placeholder: "Add date" }} />
+          <span className="field-label">{m.dates}</span>
+          <DateRangeField lang={lang} min={today} checkIn={today} checkOut={tomorrow} labels={{ ...m.range, nights: t.nights }} />
         </div>
         <div className="grid grid-cols-3 gap-3 sm:col-span-2">
-          {f("adults", "Adults", { type: "number", min: 1, max: 12, defaultValue: 2 })}
-          {f("children", "Children", { type: "number", min: 0, max: 8, defaultValue: 0 })}
-          {f("rooms", "Rooms", { type: "number", min: 1, max: 5, defaultValue: 1 })}
+          {f("adults", m.adults, { type: "number", min: 1, max: 12, defaultValue: 2 })}
+          {f("children", m.children, { type: "number", min: 0, max: 8, defaultValue: 0 })}
+          {f("rooms", m.rooms, { type: "number", min: 1, max: 5, defaultValue: 1 })}
         </div>
       </fieldset>
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="font-semibold mb-3">Guest</legend>
-        {f("firstName", "First name", { required: true })}
-        {f("lastName", "Last name", { required: true })}
-        {f("phone", "Phone", { type: "tel", required: true, placeholder: "+383" })}
-        {f("email", "Email (optional)", { type: "email" })}
-        {f("country", "Country code", { maxLength: 2, placeholder: "XK" })}
-        <SelectField name="locale" label="Guest language" defaultValue="sq" options={[{ value: "sq", label: "Albanian" }, { value: "en", label: "English" }, { value: "de", label: "German" }]} />
+        <legend className="font-semibold mb-3">{m.guest}</legend>
+        {f("firstName", m.firstName, { required: true })}
+        {f("lastName", m.lastName, { required: true })}
+        {f("phone", m.phone, { type: "tel", required: true, placeholder: "+383" })}
+        {f("email", m.email, { type: "email" })}
+        {f("country", m.country, { maxLength: 2, placeholder: "XK" })}
+        <SelectField
+          name="locale"
+          label={m.guestLanguage}
+          defaultValue="sq"
+          options={(["sq", "en", "de"] as const).map((l) => ({ value: l, label: t.guestLang[l] }))}
+        />
         <label className="flex items-center gap-2 sm:col-span-2">
-          <input type="checkbox" name="parking" className="size-4" /> Needs a parking space
+          <input type="checkbox" name="parking" className="size-4" /> {m.parking}
         </label>
       </fieldset>
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="font-semibold mb-3">Booking</legend>
-        <SelectField name="source" label="Booked via" defaultValue="phone" options={[{ value: "phone", label: "Phone" }, { value: "walk_in", label: "Walk-in" }, { value: "ota", label: "Booking.com / OTA" }]} />
-        <SelectField name="status" label="Status" defaultValue="confirmed" options={[{ value: "confirmed", label: "Confirmed" }, { value: "pending", label: "Pending" }]} />
+        <legend className="font-semibold mb-3">{m.booking}</legend>
+        <SelectField
+          name="source"
+          label={m.via}
+          defaultValue="phone"
+          options={(["phone", "walk_in", "ota"] as const).map((v) => ({ value: v, label: t.source[v] }))}
+        />
+        <SelectField
+          name="status"
+          label={m.status}
+          defaultValue="confirmed"
+          options={(["confirmed", "pending"] as const).map((v) => ({ value: v, label: t.status[v] }))}
+        />
         <div className="sm:col-span-2">
           <label htmlFor="mb-notes" className="field-label">
-            Guest requests
+            {m.requests}
           </label>
           <textarea id="mb-notes" name="notes" rows={2} className="field" />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="mb-internal" className="field-label">
-            Staff note
+            {m.staffNote}
           </label>
           <textarea id="mb-internal" name="internalNote" rows={2} className="field" />
         </div>
         <label className="flex items-center gap-2 sm:col-span-2">
-          <input type="checkbox" name="sendEmail" defaultChecked className="size-4" /> Email the confirmation to the guest (if an email is given)
+          <input type="checkbox" name="sendEmail" defaultChecked className="size-4" /> {m.sendEmail}
         </label>
       </fieldset>
       <div>
         <button className="btn btn-primary" disabled={pending}>
-          {pending ? "Saving" : "Save booking"}
+          {pending ? t.saving : m.submit}
         </button>
       </div>
     </form>

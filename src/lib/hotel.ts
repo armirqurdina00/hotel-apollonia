@@ -34,6 +34,14 @@ export const HOTEL = {
 } as const;
 
 /**
+ * How long a conference room request is for. Stored in the request's `time`
+ * column (tables store a clock time there instead).
+ */
+export const MEETING_DURATIONS = ["morning", "afternoon", "full_day"] as const;
+export type MeetingDuration = (typeof MEETING_DURATIONS)[number];
+export const isMeetingDuration = (v: unknown): v is MeetingDuration => (MEETING_DURATIONS as readonly unknown[]).includes(v);
+
+/**
  * Pricing rules applied on top of each room's base rate. Admin day overrides
  * replace the computed price for that date.
  */

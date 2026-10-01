@@ -1,14 +1,20 @@
 import Link from "next/link";
 import { and, asc, eq, gt, inArray, lt, count } from "drizzle-orm";
 import { db, bookings, roomTypes, inquiries, HOLDING_STATUSES } from "@/db";
-import { requireAdmin, STATUS_LABEL, STATUS_STYLE } from "@/lib/admin";
+import { getAdminI18n, requireAdmin, STATUS_STYLE } from "@/lib/admin";
+import { fill, plural } from "@/i18n/config";
+import type { AdminDict, AdminLang } from "@/i18n/admin";
 import { addDays, addMonths, formatDate, formatMoney, monthStart, nightsBetween, todayInGjakova } from "@/lib/dates";
 
-export const metadata = { title: "Today" };
+export async function generateMetadata() {
+  const { t } = await getAdminI18n();
+  return { title: t.nav.today };
+}
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
   await requireAdmin();
+  const { lang, t } = await getAdminI18n();
   const today = todayInGjakova();
   const horizon = addDays(today, 14);
   const mStart = monthStart(today);
@@ -51,26 +57,26 @@ export default async function Dashboard() {
   const pendingCount = active.filter((x) => x.b.status === "pending").length;
 
   const stats = [
-    { label: "Occupied tonight", value: `${occupiedTonight} / ${totalRooms}`, note: `${Math.round((occupiedTonight / Math.max(1, totalRooms)) * 100)}% occupancy` },
-    { label: "Arrivals today", value: arrivals.length },
-    { label: "Departures today", value: departures.length },
-    { label: "Room revenue this month", value: formatMoney(monthRevenue, "en"), note: "Booked nights in this month" },
+    { label: t.dashboard.occupiedTonight, value: `${occupiedTonight} / ${totalRooms}`, note: fill(t.dashboard.occupancy, { pct: Math.round((occupiedTonight / Math.max(1, totalRooms)) * 100) }) },
+    { label: t.dashboard.arrivalsToday, value: arrivals.length },
+    { label: t.dashboard.departuresToday, value: departures.length },
+    { label: t.dashboard.revenue, value: formatMoney(monthRevenue, lang), note: t.dashboard.revenueNote },
   ];
 
   return (
     <div className="max-w-6xl">
-      <h1 className="text-4xl">{formatDate(today, "en", { weekday: "long", month: "long", year: true })}</h1>
+      <h1 className="text-4xl first-letter:uppercase">{formatDate(today, lang, { weekday: "long", month: "long", year: true })}</h1>
 
       {(pendingCount > 0 || newInq.n > 0) && (
         <div className="mt-5 flex flex-wrap gap-3">
           {pendingCount > 0 && (
             <Link href="/admin/bookings?status=pending" className="rounded-[var(--radius-soft)] bg-gold-soft px-4 py-2.5 font-semibold text-forest">
-              {pendingCount} booking{pendingCount > 1 ? "s" : ""} waiting for confirmation
+              {plural(lang, t.dashboard.pending, pendingCount)}
             </Link>
           )}
           {newInq.n > 0 && (
             <Link href="/admin/inquiries" className="rounded-[var(--radius-soft)] bg-gold-soft px-4 py-2.5 font-semibold text-forest">
-              {newInq.n} new table or meeting request{newInq.n > 1 ? "s" : ""}
+              {plural(lang, t.dashboard.newRequests, newInq.n)}
             </Link>
           )}
         </div>
@@ -87,8 +93,8 @@ export default async function Dashboard() {
       </dl>
 
       <section className="mt-10">
-        <h2 className="font-sans text-base font-semibold">Occupancy, next 14 nights</h2>
-        <div className="mt-4 grid grid-cols-14 gap-1.5 items-end h-40" role="img" aria-label="Occupancy by night for the next 14 nights">
+        <h2 className="font-sans text-base font-semibold">{t.dashboard.occupancyTitle}</h2>
+        <div className="mt-4 grid grid-cols-14 gap-1.5 items-end h-40" role="img" aria-label={t.dashboard.occupancyLabel}>
           {days.map((x) => (
             <div key={x.d} className="flex h-full flex-col justify-end items-center gap-1" title={`${x.d}: ${x.occ}/${totalRooms}`}>
               <span className="text-[0.6875rem] tabular-nums text-muted">{Math.round(x.pct * 100)}%</span>
@@ -98,23 +104,35 @@ export default async function Dashboard() {
         </div>
         <div className="mt-1 grid grid-cols-14 gap-1.5 text-center text-[0.6875rem] text-muted">
           {days.map((x) => (
-            <span key={x.d}>{formatDate(x.d, "en", { weekday: "short" }).replace(/ .*/, "").replace(",", "")}</span>
+            <span key={x.d}>{formatDate(x.d, lang, { weekday: "short" }).replace(/ .*/, "").replace(",", "")}</span>
           ))}
         </div>
       </section>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        <GuestList title="Arriving today" rows={arrivals} empty="No arrivals today." />
-        <GuestList title="Leaving today" rows={departures} empty="No departures today." />
+        <GuestList title={t.dashboard.arriving} rows={arrivals} empty={t.dashboard.noArrivals} lang={lang} t={t} />
+        <GuestList title={t.dashboard.leaving} rows={departures} empty={t.dashboard.noDepartures} lang={lang} t={t} />
       </div>
       <div className="mt-8">
-        <GuestList title="In the hotel tonight" rows={inHouse} empty="No guests in the hotel tonight." />
+        <GuestList title={t.dashboard.inHouse} rows={inHouse} empty={t.dashboard.noInHouse} lang={lang} t={t} />
       </div>
     </div>
   );
 }
 
-function GuestList({ title, rows, empty }: { title: string; rows: { b: typeof bookings.$inferSelect; roomName: { en: string } }[]; empty: string }) {
+function GuestList({
+  title,
+  rows,
+  empty,
+  lang,
+  t,
+}: {
+  title: string;
+  rows: { b: typeof bookings.$inferSelect; roomName: Record<AdminLang, string> }[];
+  empty: string;
+  lang: AdminLang;
+  t: AdminDict;
+}) {
   return (
     <section>
       <h2 className="font-sans text-base font-semibold mb-3">
@@ -132,11 +150,11 @@ function GuestList({ title, rows, empty }: { title: string; rows: { b: typeof bo
                 </span>
                 <span className="text-muted">
                   {b.rooms > 1 && `${b.rooms} × `}
-                  {roomName.en}, {b.nights} night{b.nights > 1 ? "s" : ""}
+                  {roomName[lang]}, {plural(lang, t.nights, b.nights)}
                 </span>
-                {b.arrivalTime && <span className="text-muted">arrives {b.arrivalTime}</span>}
-                {b.parking && <span className="text-xs rounded bg-black/5 px-1.5 py-0.5">Parking</span>}
-                <span className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[b.status]}`}>{STATUS_LABEL[b.status]}</span>
+                {b.arrivalTime && <span className="text-muted">{fill(t.dashboard.arrives, { time: b.arrivalTime })}</span>}
+                {b.parking && <span className="text-xs rounded bg-black/5 px-1.5 py-0.5">{t.dashboard.parking}</span>}
+                <span className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[b.status]}`}>{t.status[b.status]}</span>
               </Link>
             </li>
           ))}

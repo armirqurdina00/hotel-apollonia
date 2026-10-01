@@ -3,6 +3,7 @@
 import { useActionState, useId } from "react";
 import { inquiryAction, type FormState } from "@/app/[lang]/actions";
 import type { Locale } from "@/i18n/config";
+import { MEETING_DURATIONS, type MeetingDuration } from "@/lib/hotel";
 import { DateField } from "./ui/date-picker";
 import { SelectField } from "./ui/select";
 
@@ -19,6 +20,8 @@ type Labels = {
   emailOptional: string;
   date: string;
   time: string;
+  duration: string;
+  durations: Record<MeetingDuration, string>;
   people: string;
   message: string;
   send: string;
@@ -92,9 +95,16 @@ export function InquiryForm({ kind, lang, today, labels, withTime }: { kind: "ta
       {withTime ? (
         <SelectField name="time" label={labels.time} options={TIME_SLOTS} defaultValue={v.time ?? "20:00"} placeholder={labels.pickTime} />
       ) : (
-        field("email", labels.emailOptional, { type: "email", autoComplete: "email" })
+        // Conference rooms are booked by part of the day; the value is stored in the same `time` field.
+        <SelectField
+          name="time"
+          label={labels.duration}
+          options={MEETING_DURATIONS.map((d) => ({ value: d, label: labels.durations[d] }))}
+          defaultValue={v.time ?? "full_day"}
+        />
       )}
       {field("people", labels.people, { type: "number", min: 1, max: 500, inputMode: "numeric", required: true, defaultValue: v.people ?? (kind === "table" ? "4" : "20") })}
+      {!withTime && field("email", labels.emailOptional, { type: "email", autoComplete: "email" })}
       <div className="sm:col-span-2">
         <label htmlFor={`${id}-message`} className="field-label">
           {labels.message}

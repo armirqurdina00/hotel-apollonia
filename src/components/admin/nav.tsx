@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAdminI18n } from "./i18n";
 
 const ITEMS = [
-  { href: "/admin", label: "Today" },
-  { href: "/admin/bookings", label: "Bookings", badge: "bookings" },
-  { href: "/admin/calendar", label: "Rates & availability" },
-  { href: "/admin/rooms", label: "Room types" },
-  { href: "/admin/inquiries", label: "Tables & meetings", badge: "inquiries" },
+  { href: "/admin", label: "today" },
+  { href: "/admin/bookings", label: "bookings", badge: "bookings" },
+  { href: "/admin/calendar", label: "calendar" },
+  { href: "/admin/rooms", label: "rooms" },
+  { href: "/admin/inquiries", label: "inquiries", badge: "inquiries" },
 ] as const;
 
 export function AdminNav({ badges }: { badges: Record<string, number> }) {
   const path = usePathname();
+  const { t } = useAdminI18n();
   return (
     <nav className="flex lg:flex-col gap-1 shrink-0">
       {ITEMS.map((item) => {
@@ -25,7 +27,7 @@ export function AdminNav({ badges }: { badges: Record<string, number> }) {
             aria-current={active ? "page" : undefined}
             className={`flex items-center justify-between gap-3 whitespace-nowrap rounded-[4px] px-3 py-2 ${active ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10"}`}
           >
-            {item.label}
+            {t.nav[item.label]}
             {n > 0 && <span className="rounded-full bg-gold px-2 text-xs font-semibold text-ink">{n}</span>}
           </Link>
         );

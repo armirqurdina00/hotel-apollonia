@@ -26,6 +26,8 @@ export function formLabels(t: Dictionary, sent: string) {
     emailOptional: t.forms.emailOptional,
     date: t.forms.date,
     time: t.forms.time,
+    duration: t.forms.duration,
+    durations: t.forms.durations,
     people: t.forms.people,
     message: t.forms.message,
     send: t.forms.send,
