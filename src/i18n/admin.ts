@@ -25,6 +25,8 @@ const sq = {
     inquiries: "Tavolina dhe takime",
     settings: "Faqja",
     viewWebsite: "Shiko faqen",
+    menu: "Menyja",
+    close: "Mbyll menynë",
     signOut: "Dil",
   },
   login: {
@@ -370,6 +372,8 @@ const en: AdminDict = {
     inquiries: "Tables & meetings",
     settings: "Website",
     viewWebsite: "View website",
+    menu: "Menu",
+    close: "Close menu",
     signOut: "Sign out",
   },
   login: {

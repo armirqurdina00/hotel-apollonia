@@ -105,6 +105,13 @@
     color: var(--color-ink);
     font: inherit;
   }
+  /* iPhones zoom into any field whose text is under 16px (the admin's base size is 15px). */
+  @media (pointer: coarse) {
+    .field,
+    .stepper-input {
+      font-size: max(1rem, 1em);
+    }
+  }
   .field:focus-visible {
     outline: 3px solid var(--color-gold);
     outline-offset: 0;

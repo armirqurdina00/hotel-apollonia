@@ -81,10 +81,6 @@ export function LiveUpdates({ initial }: { initial: { b: number; i: number } }) 
   const audio = useRef<AudioContext | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [unseen, setUnseen] = useState(0);
-  const browserPermission = useNotificationPermission();
-  const [answered, setAnswered] = useState<NotificationPermission | null>(null);
-  const permission = answered ?? browserPermission;
-
   useEffect(() => {
     // Browsers only allow sound after the page has been clicked or typed in once.
     const unlock = () => {
@@ -165,15 +161,6 @@ export function LiveUpdates({ initial }: { initial: { b: number; i: number } }) 
 
   return (
     <>
-      {permission === "default" && (
-        <button
-          type="button"
-          onClick={async () => setAnswered(await Notification.requestPermission())}
-          className="shrink-0 rounded-[4px] px-3 py-2 text-left text-sm text-white/70 hover:bg-white/10 hover:text-white"
-        >
-          {t.live.enableAlerts}
-        </button>
-      )}
       {alerts.length > 0 && (
         <ul aria-live="polite" className="fixed bottom-4 right-4 z-50 grid w-[min(22rem,calc(100vw-2rem))] gap-2">
           {alerts.map((a) => (
@@ -196,5 +183,22 @@ export function LiveUpdates({ initial }: { initial: { b: number; i: number } }) 
         </ul>
       )}
     </>
+  );
+}
+
+/** Asks this browser for permission to show desktop alerts; hidden once answered. */
+export function EnableAlerts() {
+  const { t } = useAdminI18n();
+  const browserPermission = useNotificationPermission();
+  const [answered, setAnswered] = useState<NotificationPermission | null>(null);
+  if ((answered ?? browserPermission) !== "default") return null;
+  return (
+    <button
+      type="button"
+      onClick={async () => setAnswered(await Notification.requestPermission())}
+      className="shrink-0 rounded-[4px] px-3 py-2 text-left text-sm text-white/70 hover:bg-white/10 hover:text-white"
+    >
+      {t.live.enableAlerts}
+    </button>
   );
 }

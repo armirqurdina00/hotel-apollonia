@@ -17,7 +17,7 @@ export function AdminNav({ badges }: { badges: Record<string, number> }) {
   const path = usePathname();
   const { t } = useAdminI18n();
   return (
-    <nav className="flex lg:flex-col gap-1 shrink-0">
+    <nav className="flex flex-col gap-1 shrink-0">
       {ITEMS.map((item) => {
         const active = item.href === "/admin" ? path === "/admin" : path.startsWith(item.href);
         const n = "badge" in item ? badges[item.badge] : 0;
