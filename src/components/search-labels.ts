@@ -9,6 +9,7 @@ export function searchLabels(t: Dictionary, submit = t.search.submit): SearchLab
     children: t.search.children,
     rooms: t.search.rooms,
     submit,
+    searching: t.search.searching,
     nights: t.search.nights,
     directPerk: t.search.directPerk,
     pickCheckIn: t.search.pickCheckIn,

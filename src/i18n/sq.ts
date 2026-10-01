@@ -36,6 +36,7 @@ const sq: Dictionary = {
     guests: "Mysafirë",
     submit: "Shiko dhomat e lira",
     update: "Përditëso kërkimin",
+    searching: "Duke kërkuar…",
     nights: { one: "{n} natë", other: "{n} netë" },
     adultsCount: { one: "{n} i rritur", other: "{n} të rritur" },
     childrenCount: { one: "{n} fëmijë", other: "{n} fëmijë" },

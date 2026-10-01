@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { addDays, diffDays } from "@/lib/dates";
 import { DateRangeField } from "./ui/date-picker";
 import { plural, type Locale, type Plural } from "@/i18n/config";
@@ -12,6 +12,7 @@ export type SearchLabels = {
   children: string;
   rooms: string;
   submit: string;
+  searching: string;
   nights: Plural;
   directPerk: string;
   pickCheckIn: string;
@@ -81,9 +82,18 @@ export function SearchPanel({ lang, labels, today, initial = {}, layout = "stack
 
   const bar = layout === "bar";
 
+  // The search loads a new page; show progress until it arrives.
+  const [searching, setSearching] = useState(false);
+  useEffect(() => {
+    // Coming back with the browser's Back button restores this page as it was left, mid-search.
+    const reset = (e: PageTransitionEvent) => e.persisted && setSearching(false);
+    window.addEventListener("pageshow", reset);
+    return () => window.removeEventListener("pageshow", reset);
+  }, []);
+
   return (
     // "#results" makes the browser land on the results, not back at the search form.
-    <form action={`/${lang}/book#results`} method="get" className={bar ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_8.5rem_8.5rem_8.5rem_auto] lg:items-end" : "grid gap-4"}>
+    <form action={`/${lang}/book#results`} method="get" onSubmit={() => setSearching(true)} aria-busy={searching} className={bar ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_8.5rem_8.5rem_8.5rem_auto] lg:items-end" : "grid gap-4"}>
       <div className={bar ? "sm:col-span-2 lg:col-span-1" : ""}>
         <DateRangeField
           lang={lang}
@@ -113,9 +123,21 @@ export function SearchPanel({ lang, labels, today, initial = {}, layout = "stack
         <Counter label={labels.rooms} name="rooms" value={rooms} min={1} max={5} onChange={setRooms} />
       </div>
       <div className={bar ? "sm:col-span-2 lg:col-span-1" : "mt-1"}>
-        <button type="submit" disabled={nights === 0} className={`btn ${bar ? "btn-primary" : "btn-gold"} w-full`}>
-          {labels.submit}
-          {nights > 0 && <span className="font-normal opacity-80">({plural(lang, labels.nights, nights)})</span>}
+        <button type="submit" disabled={nights === 0 || searching} className={`btn ${bar ? "btn-primary" : "btn-gold"} w-full ${searching ? "disabled:!opacity-100 !cursor-progress" : ""}`}>
+          {searching ? (
+            <>
+              <svg aria-hidden viewBox="0 0 24 24" className="size-5 animate-spin" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+              <span role="status">{labels.searching}</span>
+            </>
+          ) : (
+            <>
+              {labels.submit}
+              {nights > 0 && <span className="font-normal opacity-80">({plural(lang, labels.nights, nights)})</span>}
+            </>
+          )}
         </button>
       </div>
       {!bar && <p className="text-sm text-white/75">{labels.directPerk}</p>}

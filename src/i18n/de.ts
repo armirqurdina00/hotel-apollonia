@@ -36,6 +36,7 @@ const de: Dictionary = {
     guests: "Gäste",
     submit: "Verfügbarkeit prüfen",
     update: "Suche aktualisieren",
+    searching: "Wird gesucht…",
     nights: { one: "{n} Nacht", other: "{n} Nächte" },
     adultsCount: { one: "{n} Erwachsener", other: "{n} Erwachsene" },
     childrenCount: { one: "{n} Kind", other: "{n} Kinder" },

@@ -34,6 +34,7 @@ const en = {
     guests: "Guests",
     submit: "Check availability",
     update: "Update search",
+    searching: "Searching…",
     nights: { one: "{n} night", other: "{n} nights" },
     adultsCount: { one: "{n} adult", other: "{n} adults" },
     childrenCount: { one: "{n} child", other: "{n} children" },
