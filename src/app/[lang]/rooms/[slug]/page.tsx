@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDictionary, isLocale, plural, fill } from "@/i18n";
-import { roomBySlug } from "@/lib/engine";
+import { roomBySlug, validateStay } from "@/lib/engine";
 import { HOTEL, PRICING } from "@/lib/hotel";
 import { todayInGjakova } from "@/lib/dates";
 import { RateCalendar } from "@/components/rate-calendar";
@@ -23,12 +23,17 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/rooms/[slu
   };
 }
 
-export default async function RoomPage({ params }: PageProps<"/[lang]/rooms/[slug]">) {
+export default async function RoomPage({ params, searchParams }: PageProps<"/[lang]/rooms/[slug]">) {
   const { lang, slug } = await params;
   if (!isLocale(lang)) notFound();
   const room = await roomBySlug(slug);
   if (!room) notFound();
   const t = getDictionary(lang);
+  // Arriving from search results: keep the guest's dates and party. Anything invalid is ignored.
+  const sp = await searchParams;
+  const one = (k: string) => (Array.isArray(sp[k]) ? sp[k][0] : sp[k]);
+  const search = one("checkIn") ? validateStay({ checkIn: one("checkIn"), checkOut: one("checkOut"), adults: one("adults"), children: one("children"), rooms: one("rooms") }) : null;
+  const stay = search?.ok ? search.value : null;
 
   return (
     <div className="wrap pt-8">
@@ -94,7 +99,8 @@ export default async function RoomPage({ params }: PageProps<"/[lang]/rooms/[slu
           lang={lang}
           slug={room.slug}
           today={todayInGjakova()}
-          adults={Math.min(2, room.maxAdults)}
+          party={stay ? { adults: stay.adults, children: stay.children, rooms: stay.rooms } : { adults: Math.min(2, room.maxAdults), children: 0, rooms: 1 }}
+          initialStay={stay ? { checkIn: stay.checkIn, checkOut: stay.checkOut } : undefined}
           maxNights={HOTEL.maxNights}
           lengthOfStay={PRICING.lengthOfStay}
           labels={{

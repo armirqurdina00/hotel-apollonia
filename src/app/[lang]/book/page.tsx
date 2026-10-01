@@ -98,12 +98,13 @@ function ResultRow({ quote, stay, lang, t }: { quote: Quote; stay: StayQuery; la
   });
   return (
     <li className={`grid gap-5 sm:grid-cols-[14rem_1fr] lg:grid-cols-[16rem_1fr_auto] lg:gap-8 py-7 border-t border-line first:border-t-0 ${quote.bookable ? "" : "opacity-60"}`}>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-soft)]">
-        <Image src={room.images[0]} alt="" fill sizes="16rem" className="object-cover" />
-      </div>
+      {/* The photo opens the room too; the name link below is the one for keyboards and screen readers. */}
+      <Link href={`/${lang}/rooms/${room.slug}?${qs}`} tabIndex={-1} aria-hidden className="group relative block aspect-[4/3] overflow-hidden rounded-[var(--radius-soft)]">
+        <Image src={room.images[0]} alt="" fill sizes="16rem" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+      </Link>
       <div>
         <h2 className="text-2xl sm:text-3xl">
-          <Link href={`/${lang}/rooms/${room.slug}`} className="hover:text-emerald">
+          <Link href={`/${lang}/rooms/${room.slug}?${qs}`} className="hover:text-emerald">
             {room.name[lang]}
           </Link>
         </h2>

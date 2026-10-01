@@ -31,15 +31,18 @@ type Props = {
   labels: CalendarLabels;
   /** Long-stay discount rules, mirrored from the server for the live total. */
   lengthOfStay: readonly { minNights: number; discount: number }[];
-  adults: number;
+  /** Guests and rooms carried over from a search (or sensible defaults). */
+  party: { adults: number; children: number; rooms: number };
+  /** Nights already chosen in a search; the guest can still change them here. */
+  initialStay?: { checkIn: string; checkOut: string };
   maxNights: number;
 };
 
-export function RateCalendar({ lang, slug, today, labels, lengthOfStay, adults, maxNights }: Props) {
-  const [month, setMonth] = useState(monthStart(today));
+export function RateCalendar({ lang, slug, today, labels, lengthOfStay, party, initialStay, maxNights }: Props) {
+  const [month, setMonth] = useState(monthStart(initialStay?.checkIn ?? today));
   const [days, setDays] = useState<Map<string, Day>>(new Map());
-  const [checkIn, setCheckIn] = useState<string | null>(null);
-  const [checkOut, setCheckOut] = useState<string | null>(null);
+  const [checkIn, setCheckIn] = useState<string | null>(initialStay?.checkIn ?? null);
+  const [checkOut, setCheckOut] = useState<string | null>(initialStay?.checkOut ?? null);
   const [hover, setHover] = useState<string | null>(null);
 
   useEffect(() => {
@@ -87,11 +90,12 @@ export function RateCalendar({ lang, slug, today, labels, lengthOfStay, adults, 
   const quote = useMemo(() => {
     if (!checkIn || !checkOut) return null;
     const nights = nightsBetween(checkIn, checkOut);
-    const subtotal = nights.reduce((s, d) => s + (days.get(d)?.p ?? 0), 0);
+    // Day prices are per room; a search for several rooms books that many.
+    const subtotal = nights.reduce((s, d) => s + (days.get(d)?.p ?? 0), 0) * party.rooms;
     const rate = lengthOfStay.find((r) => nights.length >= r.minNights)?.discount ?? 0;
     const discount = Math.round((subtotal * rate) / 100) * 100;
     return { nights: nights.length, subtotal, rate, total: subtotal - discount };
-  }, [checkIn, checkOut, days, lengthOfStay]);
+  }, [checkIn, checkOut, days, lengthOfStay, party.rooms]);
 
   const months = [month, addMonths(month, 1)];
   const weekdayNames = weekdayInitials(lang);
@@ -216,7 +220,10 @@ export function RateCalendar({ lang, slug, today, labels, lengthOfStay, adults, 
               >
                 {labels.clear}
               </button>
-              <Link href={`/${lang}/book/${slug}?checkIn=${checkIn}&checkOut=${checkOut}&adults=${adults}`} className="btn btn-gold">
+              <Link
+                href={`/${lang}/book/${slug}?${new URLSearchParams({ checkIn: checkIn!, checkOut: checkOut!, adults: String(party.adults), children: String(party.children), rooms: String(party.rooms) })}`}
+                className="btn btn-gold"
+              >
                 {labels.bookDates}
               </Link>
             </div>
