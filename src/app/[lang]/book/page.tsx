@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getDictionary, isLocale, plural, fill, type Dictionary, type Locale } from "@/i18n";
 import { searchStays, validateStay, type Quote, type StayQuery } from "@/lib/engine";
 import { HOTEL } from "@/lib/hotel";
+import { getSiteSettings } from "@/lib/settings";
 import { todayInGjakova, addDays } from "@/lib/dates";
 import { SearchPanel } from "@/components/search-panel";
 import { searchLabels } from "@/components/search-labels";
@@ -23,6 +24,7 @@ export default async function BookPage({ params, searchParams }: PageProps<"/[la
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
   const t = getDictionary(lang);
+  const { contact, links } = await getSiteSettings();
   const sp = await searchParams;
   const today = todayInGjakova();
   const one = (k: string) => (Array.isArray(sp[k]) ? sp[k][0] : sp[k]);
@@ -68,8 +70,8 @@ export default async function BookPage({ params, searchParams }: PageProps<"/[la
             {!quotes.some((x) => x.bookable) && (
               <p role="status" className="mt-6 rounded-[var(--radius-soft)] bg-mist border border-line p-5 prose-measure">
                 {t.results.none}{" "}
-                <a href={HOTEL.phoneHref} className="link">
-                  {HOTEL.phone}
+                <a href={links.phone} className="link">
+                  {contact.phone}
                 </a>
               </p>
             )}

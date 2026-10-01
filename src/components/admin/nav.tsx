@@ -10,6 +10,7 @@ const ITEMS = [
   { href: "/admin/calendar", label: "calendar" },
   { href: "/admin/rooms", label: "rooms" },
   { href: "/admin/inquiries", label: "inquiries", badge: "inquiries" },
+  { href: "/admin/settings", label: "settings" },
 ] as const;
 
 export function AdminNav({ badges }: { badges: Record<string, number> }) {

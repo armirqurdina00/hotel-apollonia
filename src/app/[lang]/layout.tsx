@@ -6,6 +6,7 @@ import { getDictionary, isLocale, LOCALES } from "@/i18n";
 import { HOTEL, siteUrl } from "@/lib/hotel";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { getSiteSettings } from "@/lib/settings";
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -40,23 +41,25 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
   const t = getDictionary(lang);
+  const settings = await getSiteSettings();
+  const { contact } = settings;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Hotel",
     name: HOTEL.name,
     url: `${siteUrl()}/${lang}`,
-    telephone: HOTEL.phone,
-    email: HOTEL.email,
+    telephone: contact.phone,
+    email: contact.email,
     image: `${siteUrl()}/photos/entrance.jpg`,
     priceRange: "€€",
     checkinTime: HOTEL.checkInFrom,
     checkoutTime: HOTEL.checkOutUntil,
     address: {
       "@type": "PostalAddress",
-      streetAddress: HOTEL.street,
-      addressLocality: HOTEL.city,
-      postalCode: HOTEL.postalCode,
+      streetAddress: contact.street,
+      addressLocality: contact.city,
+      postalCode: contact.postalCode,
       addressCountry: HOTEL.countryCode,
     },
     geo: { "@type": "GeoCoordinates", latitude: HOTEL.geo.lat, longitude: HOTEL.geo.lng },
@@ -65,7 +68,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
       name,
       value: true,
     })),
-    sameAs: [HOTEL.instagram, HOTEL.facebook],
+    sameAs: [contact.instagram, contact.facebook].filter(Boolean),
   };
 
   return (
@@ -74,11 +77,11 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 btn btn-primary">
           {t.nav.skip}
         </a>
-        <SiteHeader lang={lang} t={t} />
+        <SiteHeader lang={lang} t={t} settings={settings} />
         <main id="main" className="flex-1">
           {children}
         </main>
-        <SiteFooter lang={lang} t={t} />
+        <SiteFooter lang={lang} t={t} settings={settings} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </body>
     </html>

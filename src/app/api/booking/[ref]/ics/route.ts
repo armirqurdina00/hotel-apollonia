@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db, bookings, roomTypes } from "@/db";
 import { verifyBookingToken } from "@/lib/auth";
 import { HOTEL } from "@/lib/hotel";
+import { getSiteSettings } from "@/lib/settings";
 import { isLocale } from "@/i18n/config";
 
 const icsDate = (d: string) => d.replaceAll("-", "");
@@ -21,6 +22,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/booking/[ref]/ic
   if (!row) return new Response("Not found", { status: 404 });
   const { b, room } = row;
   const lang = isLocale(b.locale) ? b.locale : "en";
+  const { contact } = await getSiteSettings();
 
   const body = [
     "BEGIN:VCALENDAR",
@@ -34,8 +36,8 @@ export async function GET(req: Request, ctx: RouteContext<"/api/booking/[ref]/ic
     `DTSTART;VALUE=DATE:${icsDate(b.checkIn)}`,
     `DTEND;VALUE=DATE:${icsDate(b.checkOut)}`,
     `SUMMARY:${escape(`${HOTEL.name}: ${room.name[lang]} (${b.ref})`)}`,
-    `LOCATION:${escape(`${HOTEL.name}, ${HOTEL.street}, ${HOTEL.postalCode} ${HOTEL.city}, ${HOTEL.country}`)}`,
-    `DESCRIPTION:${escape(`${b.ref}\nCheck-in ${HOTEL.checkInFrom}, check-out ${HOTEL.checkOutUntil}\n${HOTEL.phone}`)}`,
+    `LOCATION:${escape(`${HOTEL.name}, ${contact.street}, ${contact.postalCode} ${contact.city}, ${contact.country}`)}`,
+    `DESCRIPTION:${escape(`${b.ref}\nCheck-in ${HOTEL.checkInFrom}, check-out ${HOTEL.checkOutUntil}\n${contact.phone}`)}`,
     `GEO:${HOTEL.geo.lat};${HOTEL.geo.lng}`,
     "END:VEVENT",
     "END:VCALENDAR",

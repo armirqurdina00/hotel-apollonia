@@ -7,6 +7,7 @@ import { getDictionary, isLocale, fill } from "@/i18n";
 import { verifyBookingToken } from "@/lib/auth";
 import { cancellationOpen } from "@/lib/engine";
 import { HOTEL } from "@/lib/hotel";
+import { getSiteSettings } from "@/lib/settings";
 import { formatDate } from "@/lib/dates";
 import { Price } from "@/components/price";
 import { describeGuests } from "@/components/stay-summary";
@@ -32,6 +33,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
   if (!row) notFound();
 
   const t = getDictionary(lang);
+  const { contact, links } = await getSiteSettings();
   const { booking: b, room } = row;
   const cancelled = b.status === "cancelled";
   const isNew = sp.new === "1";
@@ -105,7 +107,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
               <a href={`/api/booking/${b.ref}/ics?t=${token}`} className="btn btn-primary">
                 {t.confirm.addToCalendar}
               </a>
-              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(HOTEL.mapsQuery)}`} className="btn btn-ghost" target="_blank" rel="noopener">
+              <a href={links.maps} className="btn btn-ghost" target="_blank" rel="noopener">
                 {t.confirm.directions}
               </a>
             </div>
@@ -133,8 +135,8 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
             {!canCancel && !cancelled && <p className="text-sm text-muted">{t.confirm.cancelTooLate}</p>}
             <p className="text-sm">
               {fill(t.confirm.questions, { phone: "" })}
-              <a href={HOTEL.phoneHref} className="link">
-                {HOTEL.phone}
+              <a href={links.phone} className="link">
+                {contact.phone}
               </a>
             </p>
           </div>

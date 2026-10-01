@@ -40,6 +40,19 @@ export const media = sqliteTable("media", {
     .default(sql`(datetime('now'))`),
 });
 
+/**
+ * Website settings staff can change in the admin panel (contact details,
+ * homepage photos), one JSON value per key. Anything missing falls back to
+ * the defaults in src/lib/settings.ts.
+ */
+export const siteSettings = sqliteTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: text("value", { mode: "json" }).notNull(),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 /** Per-date adjustments set from the admin calendar. */
 export const dayOverrides = sqliteTable(
   "day_overrides",

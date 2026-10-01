@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { and, asc, count, eq, gte, lte, max } from "drizzle-orm";
 import { z } from "zod";
-import { db, bookings, dayOverrides, inquiries, media, roomTypes, BOOKING_STATUSES } from "@/db";
+import { db, bookings, dayOverrides, inquiries, media, roomTypes, siteSettings, BOOKING_STATUSES } from "@/db";
+import { IMAGE_SLOTS, type Contact, type SiteImages } from "@/lib/settings";
 import { ADMIN_COOKIE, adminCookieOptions, checkAdminPassword, createAdminSession } from "@/lib/auth";
 import { getAdminI18n, requireAdmin } from "@/lib/admin";
 import { ADMIN_LANG_COOKIE, isAdminLang } from "@/i18n/admin";
@@ -312,6 +313,35 @@ export async function moveRoomType(form: FormData) {
   // Rewrite every position so ties or gaps from older data can't confuse the order.
   for (const [n, roomId] of order.entries()) await db.update(roomTypes).set({ sortOrder: n + 1 }).where(eq(roomTypes.id, roomId));
   revalidatePath("/admin/rooms");
+}
+
+const CONTACT_FIELDS = ["phone", "barPhone", "whatsapp", "email", "street", "postalCode", "city", "country", "instagram", "facebook", "mapsQuery"] as const;
+const PHOTO_PATH = /^\/(photos|images)\/[\w.-]+$|^\/media\/\d+$/;
+
+/** Saves the website's contact details and homepage photos. */
+export async function saveSiteSettings(_: AdminState, form: FormData): Promise<AdminState> {
+  await requireAdmin();
+  const { t } = await getAdminI18n();
+  const e = t.settings;
+  const contact = Object.fromEntries(CONTACT_FIELDS.map((f) => [f, String(form.get(f) ?? "").trim().slice(0, 300)])) as Contact;
+  const images = Object.fromEntries(IMAGE_SLOTS.map((slot) => [slot, String(form.get(`image.${slot}`) ?? "")])) as SiteImages;
+
+  const isPhone = (v: string) => /^\+?[\d\s()/-]{6,}$/.test(v);
+  if (!isPhone(contact.phone) || !isPhone(contact.barPhone) || (contact.whatsapp && !isPhone(contact.whatsapp))) return { error: e.errPhone };
+  if (contact.email && !z.email().safeParse(contact.email).success) return { error: e.errEmail };
+  if ([contact.instagram, contact.facebook].some((u) => u && !/^https:\/\/\S+$/.test(u))) return { error: e.errUrl };
+  if (!contact.street || !contact.city || !contact.mapsQuery) return { error: e.errRequired };
+  if (!Object.values(images).every((src) => PHOTO_PATH.test(src))) return { error: e.errImages };
+
+  for (const [key, value] of [["contact", contact], ["images", images]] as const) {
+    await db
+      .insert(siteSettings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: now() } });
+  }
+  // Every public page shows the footer's contact details.
+  revalidatePath("/", "layout");
+  return { ok: e.saved };
 }
 
 const MAX_UPLOAD = 3.5 * 1024 * 1024;

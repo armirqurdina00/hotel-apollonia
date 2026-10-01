@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import type { Dictionary, Locale } from "@/i18n";
 import { LanguageSwitcher } from "./language-switcher";
 import { MobileMenu } from "./mobile-menu";
+import type { SiteSettings } from "@/lib/settings";
 
 /** The hotel's crest and wordmark, as on the sign above the entrance. */
 export function Logo({ className = "" }: { className?: string }) {
@@ -25,7 +26,7 @@ export function LogoOnDark({ className = "" }: { className?: string }) {
   );
 }
 
-export function SiteHeader({ lang, t }: { lang: Locale; t: Dictionary }) {
+export function SiteHeader({ lang, t, settings }: { lang: Locale; t: Dictionary; settings: SiteSettings }) {
   const links = [
     { href: `/${lang}/rooms`, label: t.nav.rooms },
     { href: `/${lang}#restaurant`, label: t.nav.restaurant },
@@ -62,6 +63,7 @@ export function SiteHeader({ lang, t }: { lang: Locale; t: Dictionary }) {
             links={[...links, { href: `/${lang}/booking`, label: t.nav.manage }]}
             book={{ href: `/${lang}/book`, label: t.nav.book }}
             labels={{ open: t.nav.menu, close: t.nav.close, language: t.nav.language, reception: t.footer.reception }}
+            phone={{ label: settings.contact.phone, href: settings.links.phone }}
           />
         </div>
       </div>

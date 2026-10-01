@@ -8,6 +8,7 @@ import { SearchPanel } from "@/components/search-panel";
 import { searchLabels, formLabels } from "@/components/search-labels";
 import { RoomRow } from "@/components/room-row";
 import { InquiryForm } from "@/components/inquiry-form";
+import { getSiteSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
   const today = todayInGjakova();
   const rooms = await activeRooms();
   const from = await fromPrices(rooms);
-  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(HOTEL.mapsQuery)}&hl=${lang}&z=15&output=embed`;
+  const { contact, images, links } = await getSiteSettings();
+  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(contact.mapsQuery)}&hl=${lang}&z=15&output=embed`;
 
   return (
     <>
@@ -27,7 +29,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         <div className="wrap grid lg:grid-cols-12 lg:min-h-[min(46rem,calc(100dvh-4.5rem))] pt-0 lg:pt-10 pb-10">
           <div className="relative -mx-4 sm:-mx-8 lg:mx-0 lg:col-start-6 lg:col-span-7 lg:row-start-1 h-80 sm:h-[28rem] lg:h-full overflow-hidden lg:rounded-[var(--radius-soft)]">
             <Image
-              src="/photos/terrace.jpg"
+              src={images.hero}
               alt="Hotel Apollonia, Rruga Tirana, Gjakovë"
               fill
               priority
@@ -79,19 +81,19 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         <div className="wrap py-20 grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-6 grid grid-cols-5 gap-3 content-start">
             <div className="col-span-3 relative aspect-[3/4] overflow-hidden rounded-[var(--radius-soft)]">
-              <Image src="/photos/restaurant.jpg" alt="" fill sizes="(min-width: 1024px) 30vw, 60vw" className="object-cover" />
+              <Image src={images.restaurantMain} alt="" fill sizes="(min-width: 1024px) 30vw, 60vw" className="object-cover" />
             </div>
             <div className="col-span-2 grid gap-3 content-end">
               <div className="relative aspect-square overflow-hidden rounded-[var(--radius-soft)]">
-                <Image src="/photos/breakfast.jpg" alt="" fill sizes="(min-width: 1024px) 20vw, 40vw" className="object-cover" />
+                <Image src={images.restaurantTop} alt="" fill sizes="(min-width: 1024px) 20vw, 40vw" className="object-cover" />
               </div>
               <div className="relative aspect-[4/5] overflow-hidden rounded-[var(--radius-soft)]">
-                <Image src="/photos/coffee.jpg" alt="" fill sizes="(min-width: 1024px) 20vw, 40vw" className="object-cover" />
+                <Image src={images.restaurantBottom} alt="" fill sizes="(min-width: 1024px) 20vw, 40vw" className="object-cover" />
               </div>
             </div>
             {/* Desktop only: fills the column beside the table form; phones already stack the photos above it. */}
             <div className="col-span-5 relative hidden lg:block aspect-[4/3] overflow-hidden rounded-[var(--radius-soft)]">
-              <Image src="/photos/restaurant-hall.jpg" alt="" fill sizes="30vw" className="object-cover object-[50%_62%]" />
+              <Image src={images.restaurantWide} alt="" fill sizes="30vw" className="object-cover object-[50%_62%]" />
             </div>
           </div>
           <div className="lg:col-span-5 lg:col-start-8">
@@ -108,8 +110,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
             <InquiryForm kind="table" lang={lang} today={today} labels={formLabels(t, t.forms.sentTable)} withTime />
             <p className="mt-4 text-sm text-muted">
               {fill(t.restaurant.callBar, { phone: "" })}
-              <a href={HOTEL.barPhoneHref} className="link">
-                {HOTEL.barPhone}
+              <a href={links.barPhone} className="link">
+                {contact.barPhone}
               </a>
             </p>
           </div>
@@ -130,7 +132,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
             ))}
           </ul>
           <div className="relative mt-8 aspect-[16/10] overflow-hidden rounded-[var(--radius-soft)]">
-            <Image src="/photos/dining-set.jpg" alt="" fill sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover" />
+            <Image src={images.meetings} alt="" fill sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover" />
           </div>
         </div>
         <div className="lg:col-span-6 lg:col-start-7 lg:pt-3">
@@ -150,13 +152,13 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         </div>
         <div className="mt-10 grid grid-cols-2 md:grid-cols-[2fr_1fr] gap-3 wrap">
           <div className="relative col-span-2 md:col-span-1 aspect-[16/9] md:aspect-auto md:row-span-2 overflow-hidden rounded-[var(--radius-soft)]">
-            <Image src="/images/bazaar-shops.jpg" alt="Çarshia e Madhe" fill sizes="(min-width: 768px) 66vw, 100vw" className="object-cover" />
+            <Image src={images.gjakovaMain} alt="Çarshia e Madhe" fill sizes="(min-width: 768px) 66vw, 100vw" className="object-cover" />
           </div>
           <div className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-soft)]">
-            <Image src="/images/bazaar-restaurant.jpg" alt="" fill sizes="(min-width: 768px) 33vw, 50vw" className="object-cover" />
+            <Image src={images.gjakovaTop} alt="" fill sizes="(min-width: 768px) 33vw, 50vw" className="object-cover" />
           </div>
           <div className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-soft)]">
-            <Image src="/images/bazaar-street.jpg" alt="" fill sizes="(min-width: 768px) 33vw, 50vw" className="object-cover object-left" />
+            <Image src={images.gjakovaBottom} alt="" fill sizes="(min-width: 768px) 33vw, 50vw" className="object-cover object-left" />
           </div>
         </div>
         <p className="wrap mt-2 text-xs text-muted">{t.location.photoCredit}</p>
@@ -168,9 +170,9 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
               <p className="mt-1">
                 {HOTEL.name}
                 <br />
-                {HOTEL.street}, {HOTEL.postalCode} {HOTEL.city}
+                {contact.street}, {contact.postalCode} {contact.city}
               </p>
-              <a className="link mt-2 inline-block" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(HOTEL.mapsQuery)}`} target="_blank" rel="noopener">
+              <a className="link mt-2 inline-block" href={links.maps} target="_blank" rel="noopener">
                 {t.location.directions}
               </a>
             </div>
@@ -191,7 +193,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
             </div>
           </div>
           <div className="lg:col-span-7 min-h-80 overflow-hidden rounded-[var(--radius-soft)] border border-line">
-            <iframe title={t.location.title} src={mapSrc} className="h-full min-h-80 w-full grayscale-[0.4]" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+            <iframe title={t.location.title} src={mapSrc} className="h-full min-h-80 w-full" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
           </div>
         </div>
       </section>

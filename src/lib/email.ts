@@ -5,6 +5,7 @@ import { getDictionary, isLocale, plural, fill, type Locale } from "@/i18n";
 import { HOTEL, isMeetingDuration, siteUrl } from "./hotel";
 import { formatDate, formatMoney } from "./dates";
 import { bookingToken } from "./auth";
+import { getSiteSettings, type SiteSettings } from "./settings";
 
 type Mail = { to: string | string[]; subject: string; text: string; html: string; replyTo?: string };
 
@@ -70,7 +71,7 @@ function valueHtml(v: string) {
 }
 
 /** One themed, table-based layout for every email (tables keep Outlook and Gmail in line). */
-function layout(m: Layout) {
+function layout(m: Layout, { contact, links }: SiteSettings) {
   const site = siteUrl();
   const rows = (m.rows ?? [])
     .map(
@@ -109,10 +110,10 @@ ${m.note ? `<p style="margin:0 0 24px;font-size:14px;line-height:1.55;color:${C.
 </td></tr>
 <tr><td class="pad" style="padding:20px 32px 28px;border-top:1px solid ${C.line};font-size:13px;line-height:1.6;color:${C.muted}">
 <strong style="color:${C.ink}">${esc(HOTEL.name)}</strong><br>
-${esc(HOTEL.street)}, ${esc(HOTEL.postalCode)} ${esc(HOTEL.city)}, ${esc(HOTEL.country)}<br>
-<a href="${HOTEL.phoneHref}" style="color:${C.emerald};text-decoration:none">${esc(HOTEL.phone)}</a> &nbsp;·&nbsp;
+${esc(contact.street)}, ${esc(contact.postalCode)} ${esc(contact.city)}, ${esc(contact.country)}<br>
+<a href="${links.phone}" style="color:${C.emerald};text-decoration:none">${esc(contact.phone)}</a> &nbsp;·&nbsp;
 <a href="${site}/${m.lang}" style="color:${C.emerald};text-decoration:none">${esc(site.replace(/^https?:\/\//, ""))}</a> &nbsp;·&nbsp;
-<a href="${HOTEL.instagram}" style="color:${C.emerald};text-decoration:none">Instagram</a>
+${contact.instagram ? `<a href="${contact.instagram}" style="color:${C.emerald};text-decoration:none">Instagram</a>` : `<a href="${links.whatsapp}" style="color:${C.emerald};text-decoration:none">WhatsApp</a>`}
 </td></tr>
 </table>
 </td></tr></table>
@@ -120,7 +121,7 @@ ${esc(HOTEL.street)}, ${esc(HOTEL.postalCode)} ${esc(HOTEL.city)}, ${esc(HOTEL.c
 }
 
 /** Plain-text version for clients that don't show HTML (and for spam filters). */
-function plainText(m: Layout) {
+function plainText(m: Layout, { contact }: SiteSettings) {
   return [
     m.heading,
     "",
@@ -131,12 +132,13 @@ function plainText(m: Layout) {
     ...(m.button ? ["", `${m.button.label}: ${m.button.href}`] : []),
     ...(m.note ? ["", m.note] : []),
     "",
-    `${HOTEL.name}, ${HOTEL.street}, ${HOTEL.city} · ${HOTEL.phone}`,
+    `${HOTEL.name}, ${contact.street}, ${contact.city} · ${contact.phone}`,
   ].join("\n");
 }
 
-function compose(to: string | string[], subject: string, m: Layout, replyTo?: string): Mail {
-  return { to, subject, html: layout(m), text: plainText(m), replyTo };
+async function compose(to: string | string[], subject: string, m: Layout, replyTo?: string): Promise<Mail> {
+  const settings = await getSiteSettings();
+  return { to, subject, html: layout(m, settings), text: plainText(m, settings), replyTo };
 }
 
 export function bookingLink(b: Pick<Booking, "ref" | "locale">) {
@@ -157,7 +159,8 @@ function stayRows(b: Booking, room: RoomType, locale: Locale): Row[] {
 }
 
 /** Guest email for a booking that is (now) confirmed. */
-function guestBooked(b: Booking, room: RoomType, kind: "booked" | "confirmed") {
+async function guestBooked(b: Booking, room: RoomType, kind: "booked" | "confirmed") {
+  const { contact } = await getSiteSettings();
   const locale = localeOf(b.locale);
   const t = getDictionary(locale);
   const name = b.firstName;
@@ -170,7 +173,7 @@ function guestBooked(b: Booking, room: RoomType, kind: "booked" | "confirmed") {
     rows: stayRows(b, room, locale),
     total: [t.confirm.total, formatMoney(b.totalCents, locale)],
     button: { href: bookingLink(b), label: t.email.manage },
-    note: `${fill(t.checkout.cancellation, { hours: HOTEL.freeCancellationHours })} ${fill(t.email.questions, { phone: HOTEL.phone })}`,
+    note: `${fill(t.checkout.cancellation, { hours: HOTEL.freeCancellationHours })} ${fill(t.email.questions, { phone: contact.phone })}`,
   });
 }
 
@@ -199,27 +202,28 @@ function staffBooking(b: Booking, room: RoomType, heading: string, intro: string
 
 /** After a booking: the guest's confirmation and, for website bookings, the hotel's notice. */
 export async function sendBookingEmails(b: Booking, room: RoomType) {
-  if (b.email) await send(guestBooked(b, room, "booked"));
+  if (b.email) await send(await guestBooked(b, room, "booked"));
   const staff = staffInbox();
   // Staff entering a phone or walk-in booking don't need an email about it.
   if (staff.length && b.source === "web") {
     const m = staffBooking(b, room, "Rezervim i ri", "Një mysafir rezervoi nga faqja e internetit. Përgjigjuni këtij emaili për t'i shkruar mysafirit.");
-    await send(compose(staff, `Rezervim i ri ${b.ref}: ${b.firstName} ${b.lastName}, ${formatDate(b.checkIn, "sq", { month: "short" })}`, m, b.email || undefined));
+    await send(await compose(staff, `Rezervim i ri ${b.ref}: ${b.firstName} ${b.lastName}, ${formatDate(b.checkIn, "sq", { month: "short" })}`, m, b.email || undefined));
   }
 }
 
 /** When staff confirm a booking that was waiting (e.g. a phone booking saved as pending). */
 export async function sendBookingConfirmedEmail(b: Booking, room: RoomType) {
-  if (b.email) await send(guestBooked(b, room, "confirmed"));
+  if (b.email) await send(await guestBooked(b, room, "confirmed"));
 }
 
 /** Tells the guest their booking is cancelled; tells the hotel only when the guest did it. */
 export async function sendCancellationEmail(b: Booking, room: RoomType, by: "guest" | "hotel") {
   const locale = localeOf(b.locale);
   const t = getDictionary(locale);
+  const { contact } = await getSiteSettings();
   if (b.email) {
     await send(
-      compose(b.email, fill(t.email.cancelledSubject, { ref: b.ref }), {
+      await compose(b.email, fill(t.email.cancelledSubject, { ref: b.ref }), {
         lang: locale,
         preheader: fill(t.email.cancelledIntro, { ref: b.ref }),
         eyebrow: `${t.confirm.ref} ${b.ref}`,
@@ -227,14 +231,14 @@ export async function sendCancellationEmail(b: Booking, room: RoomType, by: "gue
         intro: fill(t.email.cancelledIntro, { ref: b.ref }),
         rows: stayRows(b, room, locale),
         button: { href: `${siteUrl()}/${locale}/rooms`, label: t.email.rebook },
-        note: fill(t.email.questions, { phone: HOTEL.phone }),
+        note: fill(t.email.questions, { phone: contact.phone }),
       }),
     );
   }
   const staff = staffInbox();
   if (staff.length && by === "guest") {
     const m = staffBooking(b, room, "Rezervim i anuluar", "Mysafiri e anuloi rezervimin nga faqja. Dhoma u lirua për të tjerët.");
-    await send(compose(staff, `Anuluar ${b.ref}: ${b.firstName} ${b.lastName}`, m, b.email || undefined));
+    await send(await compose(staff, `Anuluar ${b.ref}: ${b.firstName} ${b.lastName}`, m, b.email || undefined));
   }
 }
 
@@ -242,6 +246,7 @@ export async function sendCancellationEmail(b: Booking, room: RoomType, by: "gue
 export async function sendInquiryEmails(i: Inquiry) {
   const locale = localeOf(i.locale);
   const t = getDictionary(locale);
+  const { contact } = await getSiteSettings();
   // A conference request's `time` is a duration code; a table's is a clock time.
   const slot = (l: Locale) => (isMeetingDuration(i.time) ? getDictionary(l).forms.durations[i.time] : i.time);
   const when = [i.date && formatDate(i.date, locale, { weekday: "long", month: "short", year: true }), slot(locale)].filter(Boolean).join(", ");
@@ -258,7 +263,7 @@ export async function sendInquiryEmails(i: Inquiry) {
       ...(i.message ? [["Mesazhi", i.message] as Row] : []),
     ];
     await send(
-      compose(
+      await compose(
         staff,
         `${label}: ${i.name}${i.date ? `, ${formatDate(i.date, "sq", { month: "short" })}` : ""}`,
         {
@@ -284,13 +289,13 @@ export async function sendInquiryEmails(i: Inquiry) {
     ];
     const subject = i.kind === "table" ? t.email.tableSubject : t.email.meetingSubject;
     await send(
-      compose(i.email, subject, {
+      await compose(i.email, subject, {
         lang: locale,
         preheader: i.kind === "table" ? t.forms.sentTable : t.forms.sentMeeting,
         heading: subject,
         intro: `${fill(t.email.requestIntro, { name: i.name })} ${i.kind === "table" ? t.forms.sentTable : t.forms.sentMeeting}`,
         rows,
-        note: fill(t.email.questions, { phone: i.kind === "table" ? HOTEL.barPhone : HOTEL.phone }),
+        note: fill(t.email.questions, { phone: i.kind === "table" ? contact.barPhone : contact.phone }),
       }),
     );
   }

@@ -6,7 +6,6 @@ import { Suspense, useState } from "react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { usePathname } from "next/navigation";
 import type { Locale } from "@/i18n/config";
-import { HOTEL } from "@/lib/hotel";
 import { LanguageSwitcher } from "./language-switcher";
 
 type Props = {
@@ -14,9 +13,10 @@ type Props = {
   links: { href: string; label: string }[];
   book: { href: string; label: string };
   labels: { open: string; close: string; language: string; reception: string };
+  phone: { label: string; href: string };
 };
 
-export function MobileMenu({ lang, links, book, labels }: Props) {
+export function MobileMenu({ lang, links, book, labels, phone }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const close = () => setOpen(false);
@@ -90,8 +90,8 @@ export function MobileMenu({ lang, links, book, labels }: Props) {
               </div>
               <div>
                 <p className="text-sm text-white/60">{labels.reception}</p>
-                <a href={HOTEL.phoneHref} className="text-lg hover:text-gold">
-                  {HOTEL.phone}
+                <a href={phone.href} className="text-lg hover:text-gold">
+                  {phone.label}
                 </a>
               </div>
             </div>
